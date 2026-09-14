@@ -71,9 +71,7 @@ function getProcessText(
 }
 
 export default function ServiceDetails() {
-  const { slug } = useParams<{
-    slug: string;
-  }>();
+  const { slug } = useParams<{ slug: string }>();
 
   const [service, setService] =
     useState<Service | null>(null);
@@ -91,6 +89,8 @@ export default function ServiceDetails() {
       return;
     }
 
+    const serviceSlug: string = slug;
+
     async function fetchService() {
       try {
         setLoading(true);
@@ -98,19 +98,16 @@ export default function ServiceDetails() {
         setService(null);
 
         const result =
-          await api.get<
-            ServiceResponse | Service
-          >(
-            `/services/${encodeURIComponent(
-              slug
-            )}`
+          await api.get<ServiceResponse>(
+            `/services/${encodeURIComponent(serviceSlug)}`
           );
 
-        const data =
-          'data' in result &&
-          result.data
-            ? result.data
-            : result;
+        const data = result.data;
+
+        if (!data) {
+          setError('Service not found.');
+          return;
+        }
 
         setService(data);
       } catch (err) {
@@ -231,35 +228,31 @@ export default function ServiceDetails() {
 
           {features.length > 0 ? (
             <ul className="mt-3 space-y-2 text-sm text-white/75">
-              {features.map(
-                (feature, index) => {
-                  const text =
-                    getFeatureText(feature);
+              {features.map((feature, index) => {
+                const text =
+                  getFeatureText(feature);
 
-                  if (!text) {
-                    return null;
-                  }
-
-                  return (
-                    <li
-                      key={
-                        typeof feature ===
-                        'string'
-                          ? `${feature}-${index}`
-                          : feature.id ??
-                            `${text}-${index}`
-                      }
-                    >
-                      • {text}
-                    </li>
-                  );
+                if (!text) {
+                  return null;
                 }
-              )}
+
+                return (
+                  <li
+                    key={
+                      typeof feature === 'string'
+                        ? `${feature}-${index}`
+                        : feature.id ??
+                          `${text}-${index}`
+                    }
+                  >
+                    • {text}
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-3 text-sm text-white/60">
-              Service details will be
-              available soon.
+              Service details will be available soon.
             </p>
           )}
         </GlassCard>
@@ -271,35 +264,31 @@ export default function ServiceDetails() {
 
           {processSteps.length > 0 ? (
             <ol className="mt-3 space-y-2 text-sm text-white/75">
-              {processSteps.map(
-                (step, index) => {
-                  const text =
-                    getProcessText(step);
+              {processSteps.map((step, index) => {
+                const text =
+                  getProcessText(step);
 
-                  if (!text) {
-                    return null;
-                  }
-
-                  return (
-                    <li
-                      key={
-                        typeof step ===
-                        'string'
-                          ? `${step}-${index}`
-                          : step.id ??
-                            `${text}-${index}`
-                      }
-                    >
-                      {index + 1}. {text}
-                    </li>
-                  );
+                if (!text) {
+                  return null;
                 }
-              )}
+
+                return (
+                  <li
+                    key={
+                      typeof step === 'string'
+                        ? `${step}-${index}`
+                        : step.id ??
+                          `${text}-${index}`
+                    }
+                  >
+                    {index + 1}. {text}
+                  </li>
+                );
+              })}
             </ol>
           ) : (
             <p className="mt-3 text-sm text-white/60">
-              Process details will be
-              available soon.
+              Process details will be available soon.
             </p>
           )}
         </GlassCard>

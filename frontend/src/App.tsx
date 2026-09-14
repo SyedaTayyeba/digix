@@ -19,41 +19,48 @@ import TermsConditions from './pages/TermsConditions';
 
 export default function App() {
   return (
-    <Routes>
-      <Route
-        element={
-          <Layout>
-            <ScrollToTop />
-          </Layout>
-        }
-      >
-        {/* Home */}
-        <Route path="/" element={<Home />} />
+    <>
+      <ScrollToTop />
 
-        {/* Company */}
-        <Route path="/about" element={<About />} />
-        <Route path="/team" element={<Team />} />
+      <Routes>
+        <Route element={<Layout />}>
+          {/* Home */}
+          <Route path="/" element={<Home />} />
 
-        {/* Services */}
-        <Route path="/services" element={<Services />} />
-        <Route path="/services/:slug" element={<ServiceDetails />} />
+          {/* Company */}
+          <Route path="/about" element={<About />} />
+          <Route path="/team" element={<Team />} />
 
-        {/* Pricing & Social Proof */}
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/testimonials" element={<Testimonials />} />
+          {/* Services */}
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:slug" element={<ServiceDetails />} />
 
-        {/* FAQs & Contact */}
-        <Route path="/faqs" element={<FAQs />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/book-consultation" element={<BookConsultation />} />
+          {/* Pricing & Social Proof */}
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/testimonials" element={<Testimonials />} />
 
-        {/* Search */}
-        <Route path="/search" element={<SearchResults />} />
+          {/* FAQs & Contact */}
+          <Route path="/faqs" element={<FAQs />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route
+            path="/book-consultation"
+            element={<BookConsultation />}
+          />
 
-        {/* Legal */}
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-conditions" element={<TermsConditions />} />
-      </Route>
-    </Routes>
+          {/* Search */}
+          <Route path="/search" element={<SearchResults />} />
+
+          {/* Legal */}
+          <Route
+            path="/privacy-policy"
+            element={<PrivacyPolicy />}
+          />
+          <Route
+            path="/terms-conditions"
+            element={<TermsConditions />}
+          />
+        </Route>
+      </Routes>
+    </>
   );
 }
