@@ -1,224 +1,330 @@
 import { useEffect, useRef, useState } from 'react';
-import { HERO_VIDEO_URL } from '../constants';
+import { HERO_VIDEO_URL, HERO_POSTER_LOCAL_FALLBACK } from '../constants';
 
-const MAX_FRAMES = 90;
-const MIN_FRAMES = 24;
-const FRAMES_PER_SECOND = 12;
-const FRAME_CACHE_MAX_WIDTH = 960;
-const LERP_FACTOR = 0.12;
-const SEEK_DELTA_THRESHOLD = 0.04;
-const MAX_DPR = 2;
+const DESKTOP_SMOOTHING = 0.35;
+const MOBILE_SMOOTHING = 0.55;
 
-/**
- * Fixed full-bleed background whose "playback" position is driven entirely
- * by scroll position, not by time. Three stacked layers, bottom to top:
- *
- *   1. poster <img>   — instant paint, fades out once we have real frames
- *   2. visible <video> — live decode, used until the frame cache is ready
- *   3. <canvas>        — draws cached frames once extraction finishes
- *
- * The frame cache exists because seeking a <video> element on every
- * scroll tick is janky (each seek is an async decode). Pre-extracting a
- * bounded number of frames as ImageBitmaps lets the canvas pick the
- * nearest one synchronously, which is what makes the scrub feel smooth.
- * Until that cache is ready, we fall back to directly seeking the video.
- */
+const DESKTOP_SEEK_THRESHOLD = 0.025;
+const MOBILE_SEEK_THRESHOLD = 0.08;
+
 export default function ScrollVideo() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const offscreenVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  const [posterVisible, setPosterVisible] = useState(true);
-  const [videoHasFrame, setVideoHasFrame] = useState(false);
-  const [frameCacheReady, setFrameCacheReady] = useState(false);
+  const animationFrameRef = useRef<number | null>(null);
 
-  const framesRef = useRef<ImageBitmap[]>([]);
-  const smoothedProgressRef = useRef(0);
-  const lastSeekTimeRef = useRef(0);
-  const rafRef = useRef<number>();
+  const scrollProgressRef = useRef(0);
+  const currentProgressRef = useRef(0);
+  const lastSeekTimeRef = useRef(-1);
 
-  // --- Frame extraction (background task, runs once) ---------------------
+  const [videoReady, setVideoReady] = useState(false);
+
+  const isMobileRef = useRef(
+    typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 768px)').matches
+  );
+
+  /*
+   * --------------------------------------------------
+   * VIDEO INITIALIZATION
+   * --------------------------------------------------
+   */
   useEffect(() => {
-    const visibleVideo = videoRef.current;
-    if (!visibleVideo) return;
+    const video = videoRef.current;
 
-    let cancelled = false;
+    if (!video) return;
 
-    async function extractFrames() {
-      const offscreen = document.createElement('video');
-      offscreen.src = HERO_VIDEO_URL;
-      offscreen.muted = true;
-      offscreen.playsInline = true;
-      offscreen.preload = 'auto';
-      offscreen.crossOrigin = 'anonymous';
-      offscreenVideoRef.current = offscreen;
+    let mounted = true;
 
-      await new Promise<void>((resolve) => {
-        offscreen.addEventListener('loadeddata', () => resolve(), { once: true });
-        offscreen.load();
-      });
-      if (cancelled) return;
+    const handleLoadedMetadata = () => {
+      if (!mounted) return;
 
-      const duration = offscreen.duration || 0;
-      if (!duration || !isFinite(duration)) return;
+      /*
+       * Start from first frame.
+       */
+      video.currentTime = 0;
 
-      const frameCount = Math.min(
-        MAX_FRAMES,
-        Math.max(MIN_FRAMES, Math.round(duration * FRAMES_PER_SECOND))
-      );
+      setVideoReady(true);
 
-      const scale = Math.min(1, FRAME_CACHE_MAX_WIDTH / offscreen.videoWidth);
-      const frameWidth = Math.round(offscreen.videoWidth * scale);
-      const frameHeight = Math.round(offscreen.videoHeight * scale);
-
-      const captureCanvas = document.createElement('canvas');
-      captureCanvas.width = frameWidth;
-      captureCanvas.height = frameHeight;
-      const captureCtx = captureCanvas.getContext('2d');
-      if (!captureCtx) return;
-
-      const frames: ImageBitmap[] = [];
-
-      for (let i = 0; i < frameCount; i++) {
-        if (cancelled) return;
-        const time = (i / (frameCount - 1)) * Math.max(0, duration - 0.05);
-
-        await new Promise<void>((resolve) => {
-          const onSeeked = () => {
-            offscreen.removeEventListener('seeked', onSeeked);
-            resolve();
-          };
-          offscreen.addEventListener('seeked', onSeeked);
-          offscreen.currentTime = time;
+      /*
+       * Try autoplay.
+       *
+       * Muted + playsInline allows autoplay on
+       * most mobile browsers.
+       */
+      video
+        .play()
+        .then(() => {
+          /*
+           * We immediately pause because the video
+           * timeline is controlled by scrolling.
+           */
+          video.pause();
+        })
+        .catch(() => {
+          /*
+           * Autoplay can be blocked.
+           * This is okay because currentTime seeking
+           * still works after metadata is loaded.
+           */
         });
-        if (cancelled) return;
-
-        captureCtx.drawImage(offscreen, 0, 0, frameWidth, frameHeight);
-        const bitmap = await createImageBitmap(captureCanvas);
-        frames.push(bitmap);
-      }
-
-      if (cancelled) return;
-      framesRef.current = frames;
-      setFrameCacheReady(true);
-    }
-
-    const onVisibleLoadedData = () => {
-      setVideoHasFrame(true);
-      // Small yield so the visible video's own first paint isn't starved
-      // by immediately kicking off a second (offscreen) video decode.
-      window.setTimeout(() => {
-        if (!cancelled) extractFrames();
-      }, 300);
     };
 
-    visibleVideo.addEventListener('loadeddata', onVisibleLoadedData, { once: true });
+    const handleCanPlay = () => {
+      if (!mounted) return;
+
+      setVideoReady(true);
+    };
+
+    const handleError = () => {
+      if (!mounted) return;
+
+      setVideoReady(false);
+    };
+
+    video.addEventListener(
+      'loadedmetadata',
+      handleLoadedMetadata
+    );
+
+    video.addEventListener(
+      'canplay',
+      handleCanPlay
+    );
+
+    video.addEventListener(
+      'error',
+      handleError
+    );
+
+    /*
+     * Explicitly request loading.
+     */
+    video.load();
 
     return () => {
-      cancelled = true;
-      visibleVideo.removeEventListener('loadeddata', onVisibleLoadedData);
+      mounted = false;
+
+      video.removeEventListener(
+        'loadedmetadata',
+        handleLoadedMetadata
+      );
+
+      video.removeEventListener(
+        'canplay',
+        handleCanPlay
+      );
+
+      video.removeEventListener(
+        'error',
+        handleError
+      );
     };
   }, []);
 
-  // --- Scroll-driven draw loop --------------------------------------------
+  /*
+   * --------------------------------------------------
+   * SCROLL PROGRESS
+   * --------------------------------------------------
+   */
   useEffect(() => {
-    function drawObjectCover(
-      ctx: CanvasRenderingContext2D,
-      source: CanvasImageSource,
-      sourceW: number,
-      sourceH: number,
-      canvasW: number,
-      canvasH: number
-    ) {
-      if (!sourceW || !sourceH) return;
-      const scale = Math.max(canvasW / sourceW, canvasH / sourceH);
-      const drawW = sourceW * scale;
-      const drawH = sourceH * scale;
-      const dx = (canvasW - drawW) / 2;
-      const dy = (canvasH - drawH) / 2;
-      ctx.drawImage(source, dx, dy, drawW, drawH);
-    }
+    const updateScrollProgress = () => {
+      const maxScroll =
+        document.documentElement.scrollHeight -
+        window.innerHeight;
 
-    function tick() {
-      const canvas = canvasRef.current;
-      const video = videoRef.current;
-      rafRef.current = requestAnimationFrame(tick);
-      if (!canvas || !video) return;
-
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      const target = scrollable > 0 ? window.scrollY / scrollable : 0;
-      const clampedTarget = Math.min(1, Math.max(0, target));
-
-      smoothedProgressRef.current +=
-        (clampedTarget - smoothedProgressRef.current) * LERP_FACTOR;
-      const smoothed = smoothedProgressRef.current;
-
-      const frames = framesRef.current;
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-      const displayW = canvas.clientWidth;
-      const displayH = canvas.clientHeight;
-      if (canvas.width !== displayW * dpr || canvas.height !== displayH * dpr) {
-        canvas.width = displayW * dpr;
-        canvas.height = displayH * dpr;
+      if (maxScroll <= 0) {
+        scrollProgressRef.current = 0;
+        return;
       }
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
 
-      if (frameCacheReady && frames.length > 0) {
-        const index = Math.round(smoothed * (frames.length - 1));
-        const frame = frames[Math.min(frames.length - 1, Math.max(0, index))];
-        drawObjectCover(ctx, frame, frame.width, frame.height, canvas.width, canvas.height);
-      } else if (video.duration && isFinite(video.duration)) {
-        const targetTime = smoothed * Math.max(0, video.duration - 0.05);
-        if (Math.abs(targetTime - lastSeekTimeRef.current) > SEEK_DELTA_THRESHOLD) {
-          lastSeekTimeRef.current = targetTime;
-          video.currentTime = targetTime;
-        }
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      scrollProgressRef.current = Math.min(
+        1,
+        Math.max(
+          0,
+          window.scrollY / maxScroll
+        )
+      );
     };
-  }, [frameCacheReady]);
 
+    updateScrollProgress();
+
+    window.addEventListener(
+      'scroll',
+      updateScrollProgress,
+      { passive: true }
+    );
+
+    window.addEventListener(
+      'resize',
+      updateScrollProgress,
+      { passive: true }
+    );
+
+    return () => {
+      window.removeEventListener(
+        'scroll',
+        updateScrollProgress
+      );
+
+      window.removeEventListener(
+        'resize',
+        updateScrollProgress
+      );
+    };
+  }, []);
+
+  /*
+   * --------------------------------------------------
+   * SCROLL → VIDEO TIMELINE
+   * --------------------------------------------------
+   */
   useEffect(() => {
-    if (videoHasFrame || frameCacheReady) {
-      setPosterVisible(false);
-    }
-  }, [videoHasFrame, frameCacheReady]);
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    const isMobile = isMobileRef.current;
+
+    const smoothing = isMobile
+      ? MOBILE_SMOOTHING
+      : DESKTOP_SMOOTHING;
+
+    const seekThreshold = isMobile
+      ? MOBILE_SEEK_THRESHOLD
+      : DESKTOP_SEEK_THRESHOLD;
+
+    const animate = () => {
+      animationFrameRef.current =
+        requestAnimationFrame(animate);
+
+      /*
+       * Don't seek until video metadata is ready.
+       */
+      if (
+        !videoReady ||
+        video.readyState < 2 ||
+        !Number.isFinite(video.duration) ||
+        video.duration <= 0
+      ) {
+        return;
+      }
+
+      const target =
+        scrollProgressRef.current;
+
+      const current =
+        currentProgressRef.current;
+
+      const difference =
+        target - current;
+
+      /*
+       * Smooth interpolation.
+       */
+      const next =
+        Math.abs(difference) < 0.002
+          ? target
+          : current +
+            difference * smoothing;
+
+      currentProgressRef.current = next;
+
+      /*
+       * Keep a tiny margin at the end.
+       * This prevents seeking exactly to duration.
+       */
+      const duration =
+        Math.max(
+          0,
+          video.duration - 0.05
+        );
+
+      const targetTime =
+        next * duration;
+
+      /*
+       * Don't perform unnecessary seeks.
+       */
+      if (
+        lastSeekTimeRef.current >= 0 &&
+        Math.abs(
+          targetTime -
+            lastSeekTimeRef.current
+        ) < seekThreshold
+      ) {
+        return;
+      }
+
+      lastSeekTimeRef.current =
+        targetTime;
+
+      try {
+        video.currentTime = targetTime;
+      } catch {
+        /*
+         * Ignore temporary browser decoder
+         * / seeking errors.
+         */
+      }
+    };
+
+    animationFrameRef.current =
+      requestAnimationFrame(animate);
+
+    return () => {
+      if (
+        animationFrameRef.current !== null
+      ) {
+        cancelAnimationFrame(
+          animationFrameRef.current
+        );
+
+        animationFrameRef.current = null;
+      }
+    };
+  }, [videoReady]);
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden bg-[#0a0a0a] pointer-events-none">
+    <div className="fixed inset-0 z-0 overflow-hidden bg-black pointer-events-none">
+      {/*
+       * ------------------------------------------------
+       * POSTER
+       * ------------------------------------------------
+       */}
       <img
-        src="/hero-poster.jpg"
+        src={HERO_POSTER_LOCAL_FALLBACK}
         alt=""
         aria-hidden="true"
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-          posterVisible ? 'opacity-100' : 'opacity-0'
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+          videoReady
+            ? 'opacity-0'
+            : 'opacity-100'
         }`}
-        onError={(e) => {
-          // No local poster provided — the video/canvas layers cover this.
-          (e.currentTarget as HTMLImageElement).style.display = 'none';
+        onError={(event) => {
+          event.currentTarget.style.display =
+            'none';
         }}
       />
+
+      {/*
+       * ------------------------------------------------
+       * VIDEO
+       * ------------------------------------------------
+       */}
       <video
         ref={videoRef}
         src={HERO_VIDEO_URL}
         muted
         playsInline
         preload="auto"
+        autoPlay
+        controls={false}
+        loop={false}
         aria-hidden="true"
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-          videoHasFrame && !frameCacheReady ? 'opacity-100' : 'opacity-0'
-        }`}
-      />
-      <canvas
-        ref={canvasRef}
-        aria-hidden="true"
-        className={`absolute inset-0 h-full w-full transition-opacity duration-500 ${
-          frameCacheReady ? 'opacity-100' : 'opacity-0'
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+          videoReady
+            ? 'opacity-100'
+            : 'opacity-0'
         }`}
       />
     </div>
