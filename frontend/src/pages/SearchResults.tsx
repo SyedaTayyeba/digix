@@ -43,22 +43,19 @@ export default function SearchResults() {
       try {
         setLoading(true);
 
-        const response =
-          await api.get<SearchResponse>(
-            `/search?q=${encodeURIComponent(activeQuery)}`
-          );
-
-        const data = Array.isArray(response)
-          ? response
-          : response.data;
-
-        setResults(data ?? []);
-      } catch (error) {
-        console.error(
-          'Failed to search:',
-          error
+        const response = await api.get<SearchResponse>(
+          `/search?q=${encodeURIComponent(activeQuery)}`
         );
 
+        const payload = response.data;
+
+        const data: SearchResult[] = Array.isArray(payload)
+          ? payload
+          : payload.data;
+
+        setResults(data);
+      } catch (error) {
+        console.error('Failed to search:', error);
         setResults([]);
       } finally {
         setLoading(false);
@@ -68,18 +65,12 @@ export default function SearchResults() {
     search();
   }, [activeQuery]);
 
-  function handleSubmit(
-    e: FormEvent<HTMLFormElement>
-  ) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     const trimmedQuery = query.trim();
 
-    setParams(
-      trimmedQuery
-        ? { q: trimmedQuery }
-        : {}
-    );
+    setParams(trimmedQuery ? { q: trimmedQuery } : {});
   }
 
   return (
@@ -96,9 +87,7 @@ export default function SearchResults() {
         <input
           type="search"
           value={query}
-          onChange={(e) =>
-            setQuery(e.target.value)
-          }
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="Search services, FAQs…"
           className="w-full max-w-lg rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-brand/50"
         />
@@ -108,8 +97,7 @@ export default function SearchResults() {
         {activeQuery && !loading && (
           <p className="mb-6 text-sm text-white/50">
             {results.length} result
-            {results.length === 1 ? '' : 's'} for “
-            {activeQuery}”
+            {results.length === 1 ? '' : 's'} for “{activeQuery}”
           </p>
         )}
 
@@ -122,6 +110,7 @@ export default function SearchResults() {
                 <div className="mt-3 h-5 w-48 animate-pulse rounded bg-white/10" />
 
                 <div className="mt-3 h-4 w-full animate-pulse rounded bg-white/10" />
+
                 <div className="mt-2 h-4 w-5/6 animate-pulse rounded bg-white/10" />
               </GlassCard>
             ))}
@@ -131,10 +120,7 @@ export default function SearchResults() {
             <div className="grid gap-4 sm:grid-cols-2">
               {results.map((result, index) => (
                 <Link
-                  key={
-                    result.id ??
-                    `${result.href}-${index}`
-                  }
+                  key={result.id ?? `${result.href}-${index}`}
                   to={result.href}
                 >
                   <GlassCard>
@@ -156,13 +142,11 @@ export default function SearchResults() {
               ))}
             </div>
 
-            {activeQuery &&
-              results.length === 0 && (
-                <p className="text-sm text-white/50">
-                  No results. Try a different search
-                  term.
-                </p>
-              )}
+            {activeQuery && results.length === 0 && (
+              <p className="text-sm text-white/50">
+                No results. Try a different search term.
+              </p>
+            )}
           </>
         )}
       </section>

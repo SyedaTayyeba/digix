@@ -8,12 +8,12 @@ import {
   Linkedin,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
-import { services } from '../data/content';
 
 const QUICK_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'About', to: '/about' },
   { label: 'Services', to: '/services' },
+  { label: 'Testimonials', to: '/testimonials' },
   { label: 'Pricing', to: '/pricing' },
   { label: 'FAQs', to: '/faqs' },
   { label: 'Contact', to: '/contact' },
@@ -23,6 +23,8 @@ const RESOURCES = [
   { label: 'FAQs', to: '/faqs' },
   { label: 'Book a Strategy Call', to: '/book-consultation' },
   { label: 'Contact', to: '/contact' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
+  { label: 'Terms & Conditions', to: '/terms-conditions' },
 ];
 
 export default function Footer() {
@@ -51,7 +53,7 @@ export default function Footer() {
 
           <div className="mt-4 flex gap-4">
             <a
-              href="https://www.instagram.com/ddigixdubai/"
+              href="https://www.instagram.com/ddigixdubai/?hl=en"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
@@ -61,7 +63,7 @@ export default function Footer() {
             </a>
 
             <a
-              href="https://www.linkedin.com/company/digix-dubai-120155431/"
+              href="https://www.linkedin.com/company/digixdubai/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
@@ -83,7 +85,7 @@ export default function Footer() {
               <li key={link.to}>
                 <Link
                   to={link.to}
-                  className="text-sm text-white/60 hover:text-brand"
+                  className="text-sm text-white/60 transition hover:text-brand"
                 >
                   {link.label}
                 </Link>
@@ -98,18 +100,17 @@ export default function Footer() {
             Services
           </h4>
 
-          <ul className="space-y-2">
-            {services.slice(0, 5).map((service) => (
-              <li key={service.slug}>
-                <Link
-                  to={`/services/${service.slug}`}
-                  className="text-sm text-white/60 hover:text-brand"
-                >
-                  {service.title}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <p className="text-sm leading-6 text-white/50">
+            Explore our digital services and discover solutions tailored to
+            your business goals.
+          </p>
+
+          <Link
+            to="/services"
+            className="mt-3 inline-block text-sm text-brand transition hover:underline"
+          >
+            View all services →
+          </Link>
         </div>
 
         {/* Resources */}
@@ -120,10 +121,10 @@ export default function Footer() {
 
           <ul className="space-y-2">
             {RESOURCES.map((link) => (
-              <li key={link.label}>
+              <li key={link.to}>
                 <Link
                   to={link.to}
-                  className="text-sm text-white/60 hover:text-brand"
+                  className="text-sm text-white/60 transition hover:text-brand"
                 >
                   {link.label}
                 </Link>
@@ -158,7 +159,7 @@ export default function Footer() {
 
               <a
                 href="tel:+971521045088"
-                className="hover:text-brand"
+                className="transition hover:text-brand"
               >
                 +971 52 104 5088
               </a>
@@ -173,7 +174,7 @@ export default function Footer() {
 
               <a
                 href="mailto:ddigixdubai@gmail.com"
-                className="break-all hover:text-brand"
+                className="break-all transition hover:text-brand"
               >
                 ddigixdubai@gmail.com
               </a>
@@ -193,7 +194,7 @@ export default function Footer() {
                 href="https://wa.me/971521045088?text=Hi%2C%20I%27d%20like%20to%20know%20more%20about%20your%20services."
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 hover:text-brand"
+                className="flex items-center gap-2 transition hover:text-brand"
               >
                 <MessageCircle
                   size={17}
@@ -208,22 +209,22 @@ export default function Footer() {
       </div>
 
       {/* Bottom */}
-      <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-3 pb-0 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-5 flex flex-col gap-3 border-t border-white/15 pt-3 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
         <p>
           © {new Date().getFullYear()} DigixDubai. All rights reserved.
         </p>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
           <Link
             to="/privacy-policy"
-            className="hover:text-brand"
+            className="transition hover:text-brand"
           >
             Privacy Policy
           </Link>
 
           <Link
             to="/terms-conditions"
-            className="hover:text-brand"
+            className="transition hover:text-brand"
           >
             Terms &amp; Conditions
           </Link>

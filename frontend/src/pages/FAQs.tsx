@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 
 import PageHero from '../components/ui/PageHero';
 import Accordion from '../components/ui/Accordion';
@@ -8,15 +9,20 @@ type FAQ = {
   id?: number;
   question: string;
   answer: string;
-  category?: string;
+  category?: string | null;
+  category_id?: number | null;
+  category_name?: string | null;
   sort_order?: number;
+  status?: string;
 };
 
-type FAQResponse =
-  | FAQ[]
-  | {
-      data: FAQ[];
-    };
+type FAQCategory = {
+  id?: number;
+  name?: string;
+};
+
+const cardClass =
+  'border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:border-brand/30 hover:bg-black/35';
 
 export default function FAQs() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -26,20 +32,44 @@ export default function FAQs() {
   useEffect(() => {
     async function loadFAQs() {
       try {
-        const response =
-          await api.get<FAQResponse>('/faqs');
+        setLoading(true);
 
-        const data = Array.isArray(response)
-          ? response
-          : response.data;
+        const response = await api.get('/faqs');
 
-        setFaqs(data ?? []);
+        const payload = response.data;
+
+        const rawData = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+
+        const normalized = rawData.map((faq: FAQ) => {
+          const categoryValue = faq.category;
+
+          let categoryName = faq.category_name ?? '';
+
+          if (typeof categoryValue === 'string') {
+            categoryName = categoryValue;
+          } else if (
+            categoryValue &&
+            typeof categoryValue === 'object'
+          ) {
+            const categoryObject =
+              categoryValue as unknown as FAQCategory;
+
+            categoryName = categoryObject.name ?? '';
+          }
+
+          return {
+            ...faq,
+            category_name: categoryName || 'General',
+          };
+        });
+
+        setFaqs(normalized);
       } catch (error) {
-        console.error(
-          'Failed to load FAQs:',
-          error
-        );
-
+        console.error('Failed to load FAQs:', error);
         setFaqs([]);
       } finally {
         setLoading(false);
@@ -49,100 +79,178 @@ export default function FAQs() {
     loadFAQs();
   }, []);
 
-  const categories = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          faqs.map(
-            (faq) => faq.category || 'General'
-          )
+  const categories = useMemo(() => {
+    return Array.from(
+      new Set(
+        faqs.map(
+          (faq) => faq.category_name || 'General'
         )
-      ),
-    [faqs]
-  );
+      )
+    );
+  }, [faqs]);
 
-  const matches = (faq: FAQ) =>
-    !query.trim() ||
-    faq.question
-      .toLowerCase()
-      .includes(query.toLowerCase()) ||
-    faq.answer
-      .toLowerCase()
-      .includes(query.toLowerCase());
+  const matches = (faq: FAQ) => {
+    const search = query.trim().toLowerCase();
+
+    if (!search) {
+      return true;
+    }
+
+    return (
+      faq.question.toLowerCase().includes(search) ||
+      faq.answer.toLowerCase().includes(search) ||
+      (faq.category_name ?? '')
+        .toLowerCase()
+        .includes(search)
+    );
+  };
+
+  const hasSearchResults =
+    !query.trim() || faqs.some(matches);
 
   return (
-    <div>
+    <div className="overflow-hidden bg-transparent text-white">
       <PageHero
         eyebrow="FAQs"
         title="Common questions"
+        highlightWords={['questions']}
+        description="Clear answers to the things clients usually want to know before getting started."
       />
 
-      <div className="px-5 pt-8 sm:px-8 md:px-12">
-        <input
-          type="search"
-          value={query}
-          onChange={(e) =>
-            setQuery(e.target.value)
-          }
-          placeholder="Search questions…"
-          className="w-full max-w-sm rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-brand/50"
-        />
-      </div>
+      <section className="relative px-5 py-4 sm:px-6 md:px-4 lg:py-2">
+        <div className="absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-brand/10 blur-[120px]" />
 
-      <div className="flex flex-col gap-10 px-5 py-10 sm:px-8 md:px-12">
-        {loading ? (
-          [1, 2, 3].map((item) => (
-            <section key={item}>
-              <div className="mb-4 h-5 w-28 animate-pulse rounded bg-white/10" />
-
-              <div className="space-y-3">
-                <div className="h-12 w-full animate-pulse rounded bg-white/10" />
-                <div className="h-12 w-full animate-pulse rounded bg-white/10" />
-              </div>
-            </section>
-          ))
-        ) : faqs.length > 0 ? (
-          categories.map((category) => {
-            const items = faqs.filter(
-              (faq) =>
-                (faq.category || 'General') ===
-                  category && matches(faq)
-            );
-
-            if (items.length === 0) {
-              return null;
-            }
-
-            return (
-              <section key={category}>
-                <h2 className="mb-4 text-lg font-medium">
-                  {category}
-                </h2>
-
-                <Accordion
-                  items={items.map((faq) => ({
-                    question: faq.question,
-                    answer: faq.answer,
-                  }))}
-                />
-              </section>
-            );
-          })
-        ) : (
-          <p className="text-sm text-white/50">
-            FAQs will be available soon.
-          </p>
-        )}
-
-        {!loading &&
-          faqs.length > 0 &&
-          query.trim() &&
-          !faqs.some(matches) && (
-            <p className="text-sm text-white/50">
-              No questions found matching your search.
+        <div className="relative mx-auto max-w-5xl">
+          <div className="mb-10">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
+              Need to know
             </p>
+
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+              Answers before you ask.
+            </h2>
+
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
+              Search through our most common questions or browse them by
+              category.
+            </p>
+          </div>
+
+          <div className="mb-12 max-w-xl">
+            <div
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${cardClass}`}
+            >
+              <Search
+                size={17}
+                className="shrink-0 text-brand"
+              />
+
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search questions..."
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/35"
+              />
+
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery('')}
+                  className="shrink-0 text-xs font-medium text-white/40 transition-colors hover:text-brand"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="space-y-8">
+              {[1, 2, 3].map((item) => (
+                <div
+                  key={item}
+                  className={`rounded-2xl border p-6 ${cardClass}`}
+                >
+                  <div className="mb-5 h-4 w-28 animate-pulse rounded bg-white/10" />
+
+                  <div className="space-y-3">
+                    <div className="h-12 w-full animate-pulse rounded-xl bg-white/10" />
+                    <div className="h-12 w-full animate-pulse rounded-xl bg-white/10" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : faqs.length > 0 ? (
+            <div className="space-y-10">
+              {categories.map((category) => {
+                const items = faqs.filter(
+                  (faq) =>
+                    (faq.category_name || 'General') ===
+                      category && matches(faq)
+                );
+
+                if (items.length === 0) {
+                  return null;
+                }
+
+                return (
+                  <section
+                    key={category}
+                    className={`rounded-2xl border p-6 sm:p-7 ${cardClass}`}
+                  >
+                    <div className="mb-6 flex items-center gap-3">
+                      <span className="h-2 w-2 rounded-full bg-brand shadow-[0_0_12px_rgba(47,188,186,0.6)]" />
+
+                      <h2 className="text-lg font-black text-white">
+                        {category}
+                      </h2>
+
+                      <span className="font-mono text-[10px] font-bold text-brand/70">
+                        {String(items.length).padStart(2, '0')}
+                      </span>
+                    </div>
+
+                    <div className="overflow-hidden rounded-xl border border-white/10 bg-black/15">
+                      <Accordion
+                        items={items.map((faq) => ({
+                          question: faq.question,
+                          answer: faq.answer,
+                        }))}
+                      />
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          ) : (
+            <div
+              className={`rounded-2xl border p-10 text-center ${cardClass}`}
+            >
+              <p className="text-sm text-white/45">
+                FAQs will be available soon.
+              </p>
+            </div>
           )}
-      </div>
+
+          {!loading &&
+            faqs.length > 0 &&
+            query.trim() &&
+            !hasSearchResults && (
+              <div
+                className={`mt-8 rounded-2xl border p-8 text-center ${cardClass}`}
+              >
+                <p className="text-sm font-bold text-white">
+                  No questions found.
+                </p>
+
+                <p className="mt-2 text-xs text-white/40">
+                  Try searching with different keywords.
+                </p>
+              </div>
+            )}
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 import PageHero from '../components/ui/PageHero';
@@ -16,14 +16,11 @@ type Service = {
   status?: string;
 };
 
-type ServicesResponse = {
-  data?: Service[];
-};
+const cardClass =
+  'border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:bg-black/35';
 
 export default function Services() {
-  const [services, setServices] = useState<Service[]>(
-    []
-  );
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -33,20 +30,19 @@ export default function Services() {
         setLoading(true);
         setError('');
 
-        const result = await api.get<
-          ServicesResponse | Service[]
-        >('/services');
+        const response = await api.get('/services');
 
-        const data = Array.isArray(result)
-          ? result
-          : result.data ?? [];
+        const payload = response.data;
+
+        const data = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
 
         setServices(data);
       } catch (err) {
-        console.error(
-          'Services API error:',
-          err
-        );
+        console.error('Services API error:', err);
 
         setError(
           err instanceof Error
@@ -62,74 +58,117 @@ export default function Services() {
   }, []);
 
   return (
-    <div>
+    <div className="overflow-hidden bg-transparent text-white">
       <PageHero
         eyebrow="Services"
         title="What we do"
+        highlightWords={['we do']}
         description="Pick one service or combine a few — every engagement is scoped around what your business actually needs next."
       />
 
-      <section className="grid gap-5 px-5 py-14 sm:grid-cols-2 sm:px-8 md:px-12 lg:grid-cols-3">
-        {loading && (
-          <>
-            {[1, 2, 3, 4, 5].map((item) => (
-              <GlassCard key={item}>
-                <div className="h-5 w-32 animate-pulse rounded bg-white/10" />
+      <section className="relative px-5 py-20 sm:px-8 md:px-6 lg:py-4">
+        <div className="absolute left-1/3 top-20 h-72 w-72 rounded-full bg-brand/10 blur-[120px]" />
 
-                <div className="mt-3 h-4 w-full animate-pulse rounded bg-white/10" />
+        <div className="relative mx-auto max-w-6xl">
+          <div className="mb-10">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
+              What we offer
+            </p>
 
-                <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-white/10" />
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+              Services built around outcomes.
+            </h2>
 
-                <div className="mt-5 h-4 w-24 animate-pulse rounded bg-white/10" />
-              </GlassCard>
-            ))}
-          </>
-        )}
-
-        {!loading && error && (
-          <div className="col-span-full py-10 text-center">
-            <p className="text-sm text-red-300">
-              {error}
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
+              No unnecessary packages. Choose what your business needs and
+              build from there.
             </p>
           </div>
-        )}
 
-        {!loading &&
-          !error &&
-          services.length === 0 && (
-            <div className="col-span-full py-10 text-center">
-              <p className="text-sm text-white/60">
+          {loading && (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {[1, 2, 3, 4, 5].map((item) => (
+                <GlassCard
+                  key={item}
+                  className={`${cardClass} p-6`}
+                >
+                  <div className="h-10 w-10 animate-pulse rounded-xl bg-white/10" />
+
+                  <div className="mt-7 h-5 w-32 animate-pulse rounded bg-white/10" />
+
+                  <div className="mt-4 h-3 w-full animate-pulse rounded bg-white/10" />
+                  <div className="mt-2 h-3 w-5/6 animate-pulse rounded bg-white/10" />
+
+                  <div className="mt-6 h-3 w-24 animate-pulse rounded bg-brand/10" />
+                </GlassCard>
+              ))}
+            </div>
+          )}
+
+          {!loading && error && (
+            <div className="rounded-2xl border border-red-400/20 bg-red-500/5 p-8 text-center backdrop-blur-xl">
+              <p className="text-sm text-red-300">{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && services.length === 0 && (
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-10 text-center backdrop-blur-xl">
+              <p className="text-sm text-white/45">
                 No services are currently available.
               </p>
             </div>
           )}
 
-        {!loading &&
-          !error &&
-          services.map((service) => (
-            <GlassCard
-              key={service.id ?? service.slug}
-            >
-              <h2 className="text-lg font-medium">
-                {service.title}
-              </h2>
+          {!loading && !error && services.length > 0 && (
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {services.map((service, index) => (
+                <GlassCard
+                  key={service.id ?? service.slug}
+                  className={`group relative overflow-hidden p-6 ${cardClass}`}
+                >
+                  <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-brand/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-              <p className="mt-2 text-sm leading-relaxed text-white/70">
-                {service.short_description ??
-                  service.summary ??
-                  service.description ??
-                  'Service details will be available soon.'}
-              </p>
+                  <div className="relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 font-mono text-xs font-bold text-brand">
+                        {String(index + 1).padStart(2, '0')}
+                      </div>
 
-              <Link
-                to={`/services/${service.slug}`}
-                className="mt-4 inline-flex items-center gap-1 text-sm text-brand hover:underline"
-              >
-                View Details
-                <ChevronRight size={14} />
-              </Link>
-            </GlassCard>
-          ))}
+                      <ArrowUpRight
+                        size={18}
+                        className="text-white/20 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand"
+                      />
+                    </div>
+
+                    <h2 className="mt-7 text-xl font-black tracking-tight text-white">
+                      {service.title}
+                    </h2>
+
+                    <p className="mt-3 min-h-[72px] text-sm leading-6 text-white/55">
+                      {service.short_description ??
+                        service.summary ??
+                        service.description ??
+                        'Service details will be available soon.'}
+                    </p>
+
+                    <div className="mt-6 border-t border-white/10 pt-4">
+                      <Link
+                        to={`/services/${service.slug}`}
+                        className="inline-flex items-center gap-1 text-sm font-bold text-brand transition-colors hover:text-white"
+                      >
+                        View Details
+                        <ChevronRight
+                          size={14}
+                          className="transition-transform duration-300 group-hover:translate-x-1"
+                        />
+                      </Link>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );

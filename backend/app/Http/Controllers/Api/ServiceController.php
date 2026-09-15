@@ -14,23 +14,20 @@ class ServiceController extends Controller
     public function index(Request $request)
     {
         $query = Service::with([
-            'translations',
             'features',
             'processSteps',
         ])
             ->where('status', 'published')
-            ->orderBy('sort_order');
+            ->orderBy('sort_order')
+            ->orderBy('id');
 
         if ($request->filled('search')) {
             $search = $request->search;
 
-            $query->whereHas('translations', function ($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                    ->orWhere(
-                        'description',
-                        'like',
-                        "%{$search}%"
-                    );
+                    ->orWhere('short_description', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -47,7 +44,6 @@ class ServiceController extends Controller
     public function show(string $slug)
     {
         $service = Service::with([
-            'translations',
             'features',
             'processSteps',
         ])

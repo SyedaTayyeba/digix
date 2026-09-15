@@ -1,16 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { HERO_VIDEO_URL, HERO_POSTER_LOCAL_FALLBACK } from '../constants';
+import {
+  HERO_VIDEO_URL,
+  HERO_POSTER_LOCAL_FALLBACK,
+} from '../constants';
 
 const DESKTOP_SMOOTHING = 0.35;
-const MOBILE_SMOOTHING = 0.55;
+const MOBILE_SMOOTHING = 0.4;
 
 const DESKTOP_SEEK_THRESHOLD = 0.025;
-const MOBILE_SEEK_THRESHOLD = 0.08;
+const MOBILE_SEEK_THRESHOLD = 0.14;
+
+const MOBILE_SEEK_INTERVAL = 70;
 
 export default function ScrollVideo() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-
   const animationFrameRef = useRef<number | null>(null);
+  const lastMobileSeekRef = useRef(0);
 
   const scrollProgressRef = useRef(0);
   const currentProgressRef = useRef(0);
@@ -23,11 +28,7 @@ export default function ScrollVideo() {
       window.matchMedia('(max-width: 768px)').matches
   );
 
-  /*
-   * --------------------------------------------------
-   * VIDEO INITIALIZATION
-   * --------------------------------------------------
-   */
+  // Video initialization
   useEffect(() => {
     const video = videoRef.current;
 
@@ -38,35 +39,8 @@ export default function ScrollVideo() {
     const handleLoadedMetadata = () => {
       if (!mounted) return;
 
-      /*
-       * Start from first frame.
-       */
       video.currentTime = 0;
-
       setVideoReady(true);
-
-      /*
-       * Try autoplay.
-       *
-       * Muted + playsInline allows autoplay on
-       * most mobile browsers.
-       */
-      video
-        .play()
-        .then(() => {
-          /*
-           * We immediately pause because the video
-           * timeline is controlled by scrolling.
-           */
-          video.pause();
-        })
-        .catch(() => {
-          /*
-           * Autoplay can be blocked.
-           * This is okay because currentTime seeking
-           * still works after metadata is loaded.
-           */
-        });
     };
 
     const handleCanPlay = () => {
@@ -96,9 +70,6 @@ export default function ScrollVideo() {
       handleError
     );
 
-    /*
-     * Explicitly request loading.
-     */
     video.load();
 
     return () => {
@@ -121,29 +92,34 @@ export default function ScrollVideo() {
     };
   }, []);
 
-  /*
-   * --------------------------------------------------
-   * SCROLL PROGRESS
-   * --------------------------------------------------
-   */
+  // Scroll progress
   useEffect(() => {
+    let ticking = false;
+
     const updateScrollProgress = () => {
-      const maxScroll =
-        document.documentElement.scrollHeight -
-        window.innerHeight;
+      if (ticking) return;
 
-      if (maxScroll <= 0) {
-        scrollProgressRef.current = 0;
-        return;
-      }
+      ticking = true;
 
-      scrollProgressRef.current = Math.min(
-        1,
-        Math.max(
-          0,
-          window.scrollY / maxScroll
-        )
-      );
+      requestAnimationFrame(() => {
+        const maxScroll =
+          document.documentElement.scrollHeight -
+          window.innerHeight;
+
+        if (maxScroll <= 0) {
+          scrollProgressRef.current = 0;
+        } else {
+          scrollProgressRef.current = Math.min(
+            1,
+            Math.max(
+              0,
+              window.scrollY / maxScroll
+            )
+          );
+        }
+
+        ticking = false;
+      });
     };
 
     updateScrollProgress();
@@ -173,11 +149,7 @@ export default function ScrollVideo() {
     };
   }, []);
 
-  /*
-   * --------------------------------------------------
-   * SCROLL → VIDEO TIMELINE
-   * --------------------------------------------------
-   */
+  // Scroll → video
   useEffect(() => {
     const video = videoRef.current;
 
@@ -193,13 +165,14 @@ export default function ScrollVideo() {
       ? MOBILE_SEEK_THRESHOLD
       : DESKTOP_SEEK_THRESHOLD;
 
-    const animate = () => {
+    let running = true;
+
+    const animate = (timestamp: number) => {
+      if (!running) return;
+
       animationFrameRef.current =
         requestAnimationFrame(animate);
 
-      /*
-       * Don't seek until video metadata is ready.
-       */
       if (
         !videoReady ||
         video.readyState < 2 ||
@@ -218,21 +191,14 @@ export default function ScrollVideo() {
       const difference =
         target - current;
 
-      /*
-       * Smooth interpolation.
-       */
       const next =
-        Math.abs(difference) < 0.002
+        Math.abs(difference) < 0.001
           ? target
           : current +
             difference * smoothing;
 
       currentProgressRef.current = next;
 
-      /*
-       * Keep a tiny margin at the end.
-       * This prevents seeking exactly to duration.
-       */
       const duration =
         Math.max(
           0,
@@ -242,9 +208,21 @@ export default function ScrollVideo() {
       const targetTime =
         next * duration;
 
-      /*
-       * Don't perform unnecessary seeks.
-       */
+      // Mobile: limit expensive decoder seeks
+      if (isMobile) {
+        if (
+          timestamp -
+            lastMobileSeekRef.current <
+          MOBILE_SEEK_INTERVAL
+        ) {
+          return;
+        }
+
+        lastMobileSeekRef.current =
+          timestamp;
+      }
+
+      // Skip tiny timeline changes
       if (
         lastSeekTimeRef.current >= 0 &&
         Math.abs(
@@ -255,16 +233,18 @@ export default function ScrollVideo() {
         return;
       }
 
+      // Never stack seeks
+      if (video.seeking) {
+        return;
+      }
+
       lastSeekTimeRef.current =
         targetTime;
 
       try {
         video.currentTime = targetTime;
       } catch {
-        /*
-         * Ignore temporary browser decoder
-         * / seeking errors.
-         */
+        // Ignore temporary decoder errors.
       }
     };
 
@@ -272,6 +252,8 @@ export default function ScrollVideo() {
       requestAnimationFrame(animate);
 
     return () => {
+      running = false;
+
       if (
         animationFrameRef.current !== null
       ) {
@@ -285,12 +267,7 @@ export default function ScrollVideo() {
   }, [videoReady]);
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden bg-black pointer-events-none">
-      {/*
-       * ------------------------------------------------
-       * POSTER
-       * ------------------------------------------------
-       */}
+    <div className="fixed inset-0 z-0 overflow-hidden bg-transparent pointer-events-none">
       <img
         src={HERO_POSTER_LOCAL_FALLBACK}
         alt=""
@@ -306,18 +283,12 @@ export default function ScrollVideo() {
         }}
       />
 
-      {/*
-       * ------------------------------------------------
-       * VIDEO
-       * ------------------------------------------------
-       */}
       <video
         ref={videoRef}
         src={HERO_VIDEO_URL}
         muted
         playsInline
-        preload="auto"
-        autoPlay
+        preload="metadata"
         controls={false}
         loop={false}
         aria-hidden="true"
