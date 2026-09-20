@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/digidcvp/digixdubai_backend/backend/
+    - /bin/cp -R backend/app $DEPLOYPATH
+    - /bin/cp -R backend/bootstrap $DEPLOYPATH
+    - /bin/cp -R backend/config $DEPLOYPATH
+    - /bin/cp -R backend/database $DEPLOYPATH
+    - /bin/cp -R backend/routes $DEPLOYPATH
+    - /bin/cp -R backend/resources $DEPLOYPATH
