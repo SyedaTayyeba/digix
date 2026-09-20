@@ -4,6 +4,7 @@ import { Hexagon } from 'lucide-react';
 
 import { useAuth } from '../hooks/useAuth';
 import type { ApiError } from '../../lib/api';
+import PageOverlay from '../../components/ui/PageOverlay';
 
 export default function Login() {
   const { user, loading, login } = useAuth();
@@ -77,6 +78,7 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 text-white">
+
       <div className="w-full max-w-sm rounded-2xl border border-white/15 bg-white/[0.04] p-8 shadow-2xl">
         <div className="mb-6 flex items-center gap-2">
           <Hexagon

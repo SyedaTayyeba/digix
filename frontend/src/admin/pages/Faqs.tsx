@@ -38,25 +38,21 @@ const columns: ColumnConfig<FaqResource>[] = [
   {
     key: 'status',
     label: 'Status',
-    render: (row) => (
-      <StatusBadge value={row.status} />
-    ),
+    render: (row) => <StatusBadge value={row.status} />,
   },
 ];
 
 export default function Faqs() {
-  const [categories, setCategories] =
-    useState<FaqCategory[]>([]);
+  const [categories, setCategories] = useState<FaqCategory[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadCategories() {
       try {
-        const response =
-          await apiGet<FaqCategoriesResponse>(
-            '/admin/faqs/categories'
-          );
+        const response = await apiGet<FaqCategoriesResponse>(
+          '/admin/faq-categories'
+        );
 
         if (!mounted) {
           return;
@@ -71,7 +67,9 @@ export default function Faqs() {
             : [];
 
         setCategories(data);
-      } catch {
+      } catch (error) {
+        console.error('Failed to load FAQ categories:', error);
+
         if (mounted) {
           setCategories([]);
         }
@@ -91,8 +89,7 @@ export default function Faqs() {
       label: 'Question',
       type: 'text',
       required: true,
-      placeholder:
-        'What services do you offer?',
+      placeholder: 'What services do you offer?',
     },
     {
       name: 'answer',
@@ -100,20 +97,17 @@ export default function Faqs() {
       type: 'textarea',
       rows: 5,
       required: true,
-      placeholder:
-        'Write the answer...',
+      placeholder: 'Write the answer...',
     },
     {
       name: 'category_id',
       label: 'Category',
       type: 'select',
       required: true,
-      options: categories.map(
-        (category) => ({
-          label: category.name,
-          value: String(category.id),
-        })
-      ),
+      options: categories.map((category) => ({
+        label: category.name,
+        value: String(category.id),
+      })),
     },
     {
       name: 'sort_order',

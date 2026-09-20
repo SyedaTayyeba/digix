@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import PageHero from '../components/ui/PageHero';
 import GlassCard from '../components/ui/GlassCard';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type SearchResult = {
   id?: number;
@@ -75,6 +76,7 @@ export default function SearchResults() {
 
   return (
     <div>
+      <PageOverlay />
       <PageHero
         eyebrow="Search"
         title="Search the site"
@@ -89,13 +91,13 @@ export default function SearchResults() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search services, FAQs…"
-          className="w-full max-w-lg rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-brand/50"
+          className="w-full max-w-lg rounded-md border border-brand/25 bg-white/10 px-3 py-2 text-sm placeholder:text-[#b5d0d3] focus:outline-none focus:ring-1 focus:ring-brand/50"
         />
       </form>
 
       <section className="px-5 py-10 sm:px-8 md:px-12">
         {activeQuery && !loading && (
-          <p className="mb-6 text-sm text-white/50">
+          <p className="mb-6 text-sm text-white">
             {results.length} result
             {results.length === 1 ? '' : 's'} for “{activeQuery}”
           </p>
@@ -124,7 +126,7 @@ export default function SearchResults() {
                   to={result.href}
                 >
                   <GlassCard>
-                    <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-white/50">
+                    <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-white">
                       {result.type}
                     </p>
 
@@ -133,7 +135,7 @@ export default function SearchResults() {
                     </h2>
 
                     {result.description && (
-                      <p className="mt-2 text-sm leading-relaxed text-white/70">
+                      <p className="mt-2 text-sm leading-relaxed text-white">
                         {result.description}
                       </p>
                     )}
@@ -143,7 +145,7 @@ export default function SearchResults() {
             </div>
 
             {activeQuery && results.length === 0 && (
-              <p className="text-sm text-white/50">
+              <p className="text-sm text-white">
                 No results. Try a different search term.
               </p>
             )}

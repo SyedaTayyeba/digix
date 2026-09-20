@@ -11,6 +11,9 @@ use Illuminate\Support\Str;
 
 class ServiceController extends Controller
 {
+    /**
+     * List all services.
+     */
     public function index()
     {
         return response()->json(
@@ -23,6 +26,9 @@ class ServiceController extends Controller
         );
     }
 
+    /**
+     * Show a single service.
+     */
     public function show(Service $service)
     {
         return response()->json(
@@ -33,6 +39,9 @@ class ServiceController extends Controller
         );
     }
 
+    /**
+     * Create a service.
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -75,6 +84,9 @@ class ServiceController extends Controller
                 'array',
             ],
 
+            /*
+             * Service Features
+             */
             'features' => [
                 'nullable',
                 'array',
@@ -86,12 +98,20 @@ class ServiceController extends Controller
                 'max:255',
             ],
 
+            'features.*.description' => [
+                'nullable',
+                'string',
+            ],
+
             'features.*.sort_order' => [
                 'nullable',
                 'integer',
                 'min:0',
             ],
 
+            /*
+             * Process Steps
+             */
             'process_steps' => [
                 'nullable',
                 'array',
@@ -116,39 +136,64 @@ class ServiceController extends Controller
         ]);
 
         $service = DB::transaction(function () use ($validated) {
-
             $slug = $validated['slug']
                 ?? Str::slug($validated['title']);
 
             $service = Service::create([
                 'slug' => $slug,
                 'title' => $validated['title'],
-                'short_description' => $validated['short_description'] ?? null,
-                'description' => $validated['description'] ?? null,
-                'status' => $validated['status'] ?? 'draft',
-                'sort_order' => $validated['sort_order'] ?? 0,
-                'custom_attributes' => $validated['custom_attributes'] ?? null,
+                'short_description' =>
+                    $validated['short_description'] ?? null,
+                'description' =>
+                    $validated['description'] ?? null,
+                'status' =>
+                    $validated['status'] ?? 'draft',
+                'sort_order' =>
+                    $validated['sort_order'] ?? 0,
+                'custom_attributes' =>
+                    $validated['custom_attributes'] ?? null,
             ]);
 
+            /*
+             * Create service features.
+             *
+             * Project is currently English-only,
+             * so locale is automatically set to "en".
+             */
             foreach ($validated['features'] ?? [] as $feature) {
                 $service->features()->create([
+                    'locale' => 'en',
                     'title' => $feature['title'],
-                    'sort_order' => $feature['sort_order'] ?? 0,
+                    'description' =>
+                        $feature['description'] ?? null,
+                    'sort_order' =>
+                        $feature['sort_order'] ?? 0,
                 ]);
             }
 
+            /*
+             * Create process steps.
+             *
+             * Project is currently English-only,
+             * so locale is automatically set to "en".
+             */
             foreach ($validated['process_steps'] ?? [] as $step) {
                 $service->processSteps()->create([
+                    'locale' => 'en',
                     'title' => $step['title'],
-                    'description' => $step['description'] ?? null,
-                    'sort_order' => $step['sort_order'] ?? 0,
+                    'description' =>
+                        $step['description'] ?? null,
+                    'sort_order' =>
+                        $step['sort_order'] ?? 0,
                 ]);
             }
 
-            return $service->fresh()->load([
-                'features',
-                'processSteps',
-            ]);
+            return $service
+                ->fresh()
+                ->load([
+                    'features',
+                    'processSteps',
+                ]);
         });
 
         ActivityLogger::log(
@@ -165,8 +210,13 @@ class ServiceController extends Controller
         );
     }
 
-    public function update(Request $request, Service $service)
-    {
+    /**
+     * Update a service.
+     */
+    public function update(
+        Request $request,
+        Service $service
+    ) {
         $validated = $request->validate([
             'slug' => [
                 'nullable',
@@ -208,6 +258,9 @@ class ServiceController extends Controller
                 'array',
             ],
 
+            /*
+             * Service Features
+             */
             'features' => [
                 'nullable',
                 'array',
@@ -219,12 +272,20 @@ class ServiceController extends Controller
                 'max:255',
             ],
 
+            'features.*.description' => [
+                'nullable',
+                'string',
+            ],
+
             'features.*.sort_order' => [
                 'nullable',
                 'integer',
                 'min:0',
             ],
 
+            /*
+             * Process Steps
+             */
             'process_steps' => [
                 'nullable',
                 'array',
@@ -248,61 +309,115 @@ class ServiceController extends Controller
             ],
         ]);
 
-        $oldValues = $service->load([
-            'features',
-            'processSteps',
-        ])->toArray();
+        /*
+         * Save old values for audit logging.
+         */
+        $oldValues = $service
+            ->load([
+                'features',
+                'processSteps',
+            ])
+            ->toArray();
 
-        DB::transaction(function () use ($validated, $service) {
-
+        DB::transaction(function () use (
+            $validated,
+            $service
+        ) {
+            /*
+             * Update main service.
+             */
             $service->update([
-                'slug' => $validated['slug'] ?? $service->slug,
-                'title' => $validated['title'] ?? $service->title,
+                'slug' =>
+                    $validated['slug']
+                    ?? $service->slug,
+
+                'title' =>
+                    $validated['title']
+                    ?? $service->title,
+
                 'short_description' =>
-                    array_key_exists('short_description', $validated)
+                    array_key_exists(
+                        'short_description',
+                        $validated
+                    )
                         ? $validated['short_description']
                         : $service->short_description,
+
                 'description' =>
-                    array_key_exists('description', $validated)
+                    array_key_exists(
+                        'description',
+                        $validated
+                    )
                         ? $validated['description']
                         : $service->description,
-                'status' => $validated['status'] ?? $service->status,
-                'sort_order' => $validated['sort_order'] ?? $service->sort_order,
+
+                'status' =>
+                    $validated['status']
+                    ?? $service->status,
+
+                'sort_order' =>
+                    $validated['sort_order']
+                    ?? $service->sort_order,
+
                 'custom_attributes' =>
-                    array_key_exists('custom_attributes', $validated)
+                    array_key_exists(
+                        'custom_attributes',
+                        $validated
+                    )
                         ? $validated['custom_attributes']
                         : $service->custom_attributes,
             ]);
 
-            if (isset($validated['features'])) {
+            /*
+             * Replace features when included.
+             */
+            if (array_key_exists('features', $validated)) {
                 $service->features()->delete();
 
-                foreach ($validated['features'] as $feature) {
+                foreach ($validated['features'] ?? [] as $feature) {
                     $service->features()->create([
+                        'locale' => 'en',
                         'title' => $feature['title'],
-                        'sort_order' => $feature['sort_order'] ?? 0,
+                        'description' =>
+                            $feature['description'] ?? null,
+                        'sort_order' =>
+                            $feature['sort_order'] ?? 0,
                     ]);
                 }
             }
 
-            if (isset($validated['process_steps'])) {
+            /*
+             * Replace process steps when included.
+             */
+            if (array_key_exists('process_steps', $validated)) {
                 $service->processSteps()->delete();
 
-                foreach ($validated['process_steps'] as $step) {
+                foreach ($validated['process_steps'] ?? [] as $step) {
                     $service->processSteps()->create([
+                        'locale' => 'en',
                         'title' => $step['title'],
-                        'description' => $step['description'] ?? null,
-                        'sort_order' => $step['sort_order'] ?? 0,
+                        'description' =>
+                            $step['description'] ?? null,
+                        'sort_order' =>
+                            $step['sort_order'] ?? 0,
                     ]);
                 }
             }
         });
 
-        $updatedService = $service->fresh()->load([
-            'features',
-            'processSteps',
-        ]);
+        /*
+         * Get fresh data after update.
+         */
+        $updatedService = $service
+            ->fresh()
+            ->load([
+                'features',
+                'processSteps',
+            ]);
 
+        /*
+         * Audit log.
+         */
         ActivityLogger::log(
             'updated',
             'services',
@@ -316,12 +431,17 @@ class ServiceController extends Controller
         );
     }
 
+    /**
+     * Delete a service.
+     */
     public function destroy(Service $service)
     {
-        $oldValues = $service->load([
-            'features',
-            'processSteps',
-        ])->toArray();
+        $oldValues = $service
+            ->load([
+                'features',
+                'processSteps',
+            ])
+            ->toArray();
 
         $service->delete();
 
@@ -334,25 +454,33 @@ class ServiceController extends Controller
         );
 
         return response()->json([
-            'message' => 'Service deleted successfully.',
+            'message' =>
+                'Service deleted successfully.',
         ]);
     }
 
+    /**
+     * Publish a service.
+     */
     public function publish(Service $service)
     {
-        $oldValues = $service->load([
-            'features',
-            'processSteps',
-        ])->toArray();
+        $oldValues = $service
+            ->load([
+                'features',
+                'processSteps',
+            ])
+            ->toArray();
 
         $service->update([
             'status' => 'published',
         ]);
 
-        $updatedService = $service->fresh()->load([
-            'features',
-            'processSteps',
-        ]);
+        $updatedService = $service
+            ->fresh()
+            ->load([
+                'features',
+                'processSteps',
+            ]);
 
         ActivityLogger::log(
             'published',
@@ -363,7 +491,8 @@ class ServiceController extends Controller
         );
 
         return response()->json([
-            'message' => 'Service published successfully.',
+            'message' =>
+                'Service published successfully.',
             'service' => $updatedService,
         ]);
     }

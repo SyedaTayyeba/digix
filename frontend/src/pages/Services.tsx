@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 
 import PageHero from '../components/ui/PageHero';
 import GlassCard from '../components/ui/GlassCard';
+import { accentAt } from '../lib/accents';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type Service = {
   id?: number;
@@ -17,7 +19,7 @@ type Service = {
 };
 
 const cardClass =
-  'border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:bg-black/35';
+  'surface-card surface-card-hover';
 
 export default function Services() {
   const [services, setServices] = useState<Service[]>([]);
@@ -59,6 +61,7 @@ export default function Services() {
 
   return (
     <div className="overflow-hidden bg-transparent text-white">
+      <PageOverlay/>
       <PageHero
         eyebrow="Services"
         title="What we do"
@@ -67,19 +70,18 @@ export default function Services() {
       />
 
       <section className="relative px-5 py-20 sm:px-8 md:px-6 lg:py-4">
-        <div className="absolute left-1/3 top-20 h-72 w-72 rounded-full bg-brand/10 blur-[120px]" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="mb-10">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
+            <p className="eyebrow text-brand-300">
               What we offer
             </p>
 
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Services built around outcomes.
             </h2>
 
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white">
               No unnecessary packages. Choose what your business needs and
               build from there.
             </p>
@@ -112,8 +114,8 @@ export default function Services() {
           )}
 
           {!loading && !error && services.length === 0 && (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-10 text-center backdrop-blur-xl">
-              <p className="text-sm text-white/45">
+            <div className="rounded-2xl border border-brand/15 bg-ink-900/60 p-10 text-center backdrop-blur-xl">
+              <p className="text-sm text-white">
                 No services are currently available.
               </p>
             </div>
@@ -121,40 +123,43 @@ export default function Services() {
 
           {!loading && !error && services.length > 0 && (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {services.map((service, index) => (
+              {services.map((service, index) => {
+                const accent = accentAt(index);
+
+                return (
                 <GlassCard
                   key={service.id ?? service.slug}
-                  className={`group relative overflow-hidden p-6 ${cardClass}`}
+                  className={`group relative overflow-hidden p-6 ${cardClass} ${accent.hoverBorder}`}
                 >
-                  <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-brand/10 blur-3xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className={`absolute -right-12 -top-12 h-32 w-32 rounded-full ${accent.glow} blur-3xl opacity-60 transition-opacity duration-300 group-hover:opacity-100`} />
 
                   <div className="relative">
                     <div className="flex items-center justify-between">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 font-mono text-xs font-bold text-brand">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl border text-xs font-bold ${accent.chip}`}>
                         {String(index + 1).padStart(2, '0')}
                       </div>
 
                       <ArrowUpRight
                         size={18}
-                        className="text-white/20 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand"
+                        className="text-white transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-white"
                       />
                     </div>
 
-                    <h2 className="mt-7 text-xl font-black tracking-tight text-white">
+                    <h2 className="mt-7 text-xl font-extrabold tracking-tight text-white">
                       {service.title}
                     </h2>
 
-                    <p className="mt-3 min-h-[72px] text-sm leading-6 text-white/55">
+                    <p className="mt-3 min-h-[72px] text-sm leading-6 text-white">
                       {service.short_description ??
                         service.summary ??
                         service.description ??
                         'Service details will be available soon.'}
                     </p>
 
-                    <div className="mt-6 border-t border-white/10 pt-4">
+                    <div className="mt-6 border-t border-brand/15 pt-4">
                       <Link
                         to={`/services/${service.slug}`}
-                        className="inline-flex items-center gap-1 text-sm font-bold text-brand transition-colors hover:text-white"
+                        className={`inline-flex items-center gap-1 text-sm font-bold transition-colors hover:text-white ${accent.text}`}
                       >
                         View Details
                         <ChevronRight
@@ -165,7 +170,8 @@ export default function Services() {
                     </div>
                   </div>
                 </GlassCard>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

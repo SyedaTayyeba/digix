@@ -1,7 +1,7 @@
 // DigixDubai public content types
 //
 // Dynamic content is provided by the Laravel REST API.
-// This file contains TypeScript interfaces and minimal
+// This file only contains TypeScript interfaces and minimal
 // fallback content required by the frontend.
 
 export interface Service {
@@ -61,23 +61,16 @@ export interface SearchResult {
   href: string;
 }
 
-export interface CaseStudy {
-  id?: number;
-  slug: string;
-  client: string;
-  category: string;
-  summary: string;
-  challenge: string;
-  strategyText: string;
-  execution: string;
-  results: string[];
-  relatedServiceSlug: string;
-}
-
 /*
 |--------------------------------------------------------------------------
 | Homepage
 |--------------------------------------------------------------------------
+|
+| Homepage content is managed through the Laravel settings module.
+| The frontend should request:
+|
+| GET /api/homepage
+|
 */
 
 export interface HomepageContent {
@@ -94,38 +87,64 @@ export interface HomepageContent {
 |--------------------------------------------------------------------------
 | Services
 |--------------------------------------------------------------------------
+|
+| GET /api/services
+| GET /api/services/{slug}
+|
+| Services are now expected to come from Laravel.
 */
 
 export const services: Service[] = [];
+
 
 /*
 |--------------------------------------------------------------------------
 | Testimonials
 |--------------------------------------------------------------------------
+|
+| GET /api/admin/testimonials
+|
+| No fictional testimonials are used as fallback content.
 */
 
 export const testimonials: Testimonial[] = [];
+
 
 /*
 |--------------------------------------------------------------------------
 | Pricing
 |--------------------------------------------------------------------------
+|
+| Pricing is scope-dependent.
+| Exact pricing should come from Laravel.
 */
 
 export const pricingPackages: PricingPackage[] = [];
+
 
 /*
 |--------------------------------------------------------------------------
 | Team
 |--------------------------------------------------------------------------
+|
+| GET /api/admin/team
+|
+| No fictional team profiles are used.
 */
 
 export const team: TeamMember[] = [];
+
 
 /*
 |--------------------------------------------------------------------------
 | FAQs
 |--------------------------------------------------------------------------
+|
+| FAQ content should come from the Laravel FAQ module.
+|
+| The array remains available as a temporary fallback so the page
+| does not break if the API is temporarily unavailable.
+|
 */
 
 export const faqs: Faq[] = [
@@ -203,39 +222,29 @@ export const faqs: Faq[] = [
   },
 ];
 
+
 /*
 |--------------------------------------------------------------------------
-| Case Studies
+| Deprecated local lookup helpers
 |--------------------------------------------------------------------------
 |
-| Case Studies are expected to come from the Laravel API.
-| This empty fallback keeps existing frontend imports valid.
+| These are kept temporarily so existing imports do not immediately break.
+| Once the pages are converted to API calls, they can be removed.
 */
 
-export const caseStudies: CaseStudy[] = [];
-
-/*
-|--------------------------------------------------------------------------
-| Lookup Helpers
-|--------------------------------------------------------------------------
-*/
-
-export const getServiceBySlug = (
-  slug: string
-): Service | undefined =>
+export const getServiceBySlug = (slug: string) =>
   services.find((service) => service.slug === slug);
 
-export const getCaseStudyBySlug = (
-  slug: string
-): CaseStudy | undefined =>
-  caseStudies.find(
-    (caseStudy) => caseStudy.slug === slug
-  );
 
 /*
 |--------------------------------------------------------------------------
-| Temporary Client-Side Search
+| Temporary client-side search
 |--------------------------------------------------------------------------
+|
+| Case Studies and Blog are intentionally excluded.
+|
+| This will be replaced by the Laravel search endpoint once the
+| Search API is finalized.
 */
 
 export function searchSite(query: string): SearchResult[] {

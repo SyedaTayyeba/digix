@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Star, Quote } from 'lucide-react';
 
 import PageHero from '../components/ui/PageHero';
+import { accentAt } from '../lib/accents';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type Testimonial = {
   id?: number;
@@ -20,7 +22,7 @@ type TestimonialsResponse =
     };
 
 const cardClass =
-  'rounded-2xl border border-white/10 bg-black/25 p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand/25 hover:bg-black/35 sm:p-7';
+  'surface-card surface-card-hover p-6 sm:p-7';
 
 export default function Testimonials() {
   const [testimonials, setTestimonials] = useState<
@@ -61,6 +63,7 @@ export default function Testimonials() {
 
   return (
     <div className="min-h-screen">
+      <PageOverlay />
       <PageHero
         eyebrow="Testimonials"
         title="What clients say"
@@ -95,7 +98,8 @@ export default function Testimonials() {
               </div>
             ))
           ) : testimonials.length > 0 ? (
-            testimonials.map((testimonial) => {
+            testimonials.map((testimonial, tIndex) => {
+              const accent = accentAt(tIndex);
               const rating = Math.min(
                 5,
                 Math.max(
@@ -110,8 +114,9 @@ export default function Testimonials() {
                     testimonial.id ??
                     `${testimonial.name}-${testimonial.quote}`
                   }
-                  className={cardClass}
+                  className={`${cardClass} relative overflow-hidden`}
                 >
+                  <div className={`absolute inset-x-0 top-0 h-1 ${accent.solid}`} />
                   <div className="flex items-center justify-between">
                     <div className="flex gap-0.5">
                       {Array.from({
@@ -122,8 +127,8 @@ export default function Testimonials() {
                           size={14}
                           className={
                             index < rating
-                              ? 'fill-brand text-brand'
-                              : 'text-white/20'
+                              ? 'fill-sun text-sun'
+                              : 'text-white'
                           }
                         />
                       ))}
@@ -132,22 +137,22 @@ export default function Testimonials() {
                     <Quote
                       size={22}
                       strokeWidth={1.5}
-                      className="text-brand/50"
+                      className={accent.text}
                     />
                   </div>
 
-                  <p className="mt-5 text-sm leading-7 text-white/75">
+                  <p className="mt-5 text-sm leading-7 text-white">
                     “{testimonial.quote}”
                   </p>
 
-                  <div className="mt-6 border-t border-white/10 pt-4">
-                    <p className="text-sm font-medium text-white">
+                  <div className="mt-6 border-t border-brand/15 pt-4">
+                    <p className="text-sm font-bold text-white">
                       {testimonial.name}
                     </p>
 
                     {(testimonial.role ||
                       testimonial.company) && (
-                      <p className="mt-1 text-xs text-white/45">
+                      <p className="mt-1 text-xs text-white">
                         {testimonial.role}
 
                         {testimonial.role &&
@@ -163,8 +168,8 @@ export default function Testimonials() {
               );
             })
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-6 py-12 text-center backdrop-blur-xl sm:col-span-2 lg:col-span-3">
-              <p className="text-sm text-white/50">
+            <div className="rounded-2xl border border-brand/15 bg-ink-900/60 px-6 py-12 text-center backdrop-blur-xl sm:col-span-2 lg:col-span-3">
+              <p className="text-sm text-white">
                 Testimonials will be available soon.
               </p>
             </div>

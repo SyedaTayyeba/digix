@@ -28,6 +28,7 @@ import type {
   LeadResource,
   LeadStage,
 } from '../types';
+import PageOverlay from '../../components/ui/PageOverlay';
 
 const ENDPOINT = '/admin/leads';
 

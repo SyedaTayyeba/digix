@@ -11,6 +11,7 @@ import { useCrudList } from '../hooks/useCrudList';
 import { useToast } from '../hooks/useToast';
 import { apiPatch, apiDelete, type ApiError } from '../../lib/api';
 import type { NewsletterSubscriberResource } from '../types';
+import PageOverlay from '../../components/ui/PageOverlay';
 
 const ENDPOINT = '/admin/newsletter';
 

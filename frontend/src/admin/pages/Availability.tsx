@@ -22,6 +22,7 @@ import {
   type ApiError,
 } from '../../lib/api';
 import type { AvailabilitySlot } from '../types';
+import PageOverlay from '../../components/ui/PageOverlay';
 
 const ENDPOINT = '/admin/availability';
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PricingPackage;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,74 +32,103 @@ class PricingPackageController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:pricing_packages,slug',
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'nullable',
             'currency' => 'nullable|string|max:10',
             'billing_period' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'is_featured' => 'nullable|boolean',
+
+            'is_popular' => 'nullable|boolean',
+            'cta_text' => 'nullable|string|max:255',
+
             'status' => 'nullable|in:draft,published,unpublished,archived',
             'sort_order' => 'nullable|integer|min:0',
 
             'features' => 'nullable|array',
-            'features.*.feature' => 'required|string|max:500',
-            'features.*.sort_order' => 'nullable|integer|min:0',
+            'features.*' => 'required',
         ]);
 
         $package = DB::transaction(function () use ($data) {
-
             $package = PricingPackage::create([
                 'name' => $data['name'],
                 'slug' => $data['slug'] ?? Str::slug($data['name']),
                 'price' => $data['price'] ?? null,
-                'currency' => $data['currency'] ?? 'USD',
+                'currency' => $data['currency'] ?? 'AED',
                 'billing_period' => $data['billing_period'] ?? null,
                 'description' => $data['description'] ?? null,
-                'is_featured' => $data['is_featured'] ?? false,
+                'is_popular' => $data['is_popular'] ?? false,
+                'cta_text' => $data['cta_text'] ?? null,
                 'status' => $data['status'] ?? 'draft',
                 'sort_order' => $data['sort_order'] ?? 0,
             ]);
 
-            foreach ($data['features'] ?? [] as $feature) {
-                $package->features()->create($feature);
+            foreach ($data['features'] ?? [] as $index => $feature) {
+                $featureText = is_array($feature)
+                    ? ($feature['feature'] ?? $feature['title'] ?? '')
+                    : $feature;
+
+                if (trim((string) $featureText) === '') {
+                    continue;
+                }
+
+                $package->features()->create([
+                    'feature' => $featureText,
+                    'sort_order' => is_array($feature)
+                        ? ($feature['sort_order'] ?? $index)
+                        : $index,
+                ]);
             }
 
             return $package;
         });
 
+        ActivityLogger::log(
+            'created',
+            'pricing_packages',
+            $package,
+            null,
+            $package->toArray()
+        );
+
         return response()->json(
-            $package->load('features'),
+            $package->fresh()->load('features'),
             201
         );
     }
 
-    public function update(Request $request, PricingPackage $pricingPackage)
-    {
+    public function update(
+        Request $request,
+        PricingPackage $pricingPackage
+    ) {
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:pricing_packages,slug,' . $pricingPackage->id,
-            'price' => 'nullable|numeric|min:0',
+            'price' => 'nullable',
             'currency' => 'nullable|string|max:10',
             'billing_period' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'is_featured' => 'nullable|boolean',
+
+            'is_popular' => 'nullable|boolean',
+            'cta_text' => 'nullable|string|max:255',
+
             'status' => 'nullable|in:draft,published,unpublished,archived',
             'sort_order' => 'nullable|integer|min:0',
 
             'features' => 'nullable|array',
-            'features.*.feature' => 'required|string|max:500',
-            'features.*.sort_order' => 'nullable|integer|min:0',
+            'features.*' => 'required',
         ]);
 
-        DB::transaction(function () use ($data, $pricingPackage) {
+        $oldValues = $pricingPackage->toArray();
 
+        DB::transaction(function () use ($data, $pricingPackage) {
             $pricingPackage->update([
                 'name' => $data['name'],
                 'slug' => $data['slug'] ?? $pricingPackage->slug,
                 'price' => $data['price'] ?? null,
-                'currency' => $data['currency'] ?? 'USD',
+                'currency' => $data['currency'] ?? 'AED',
                 'billing_period' => $data['billing_period'] ?? null,
                 'description' => $data['description'] ?? null,
-                'is_featured' => $data['is_featured'] ?? false,
+                'is_popular' => $data['is_popular'] ?? false,
+                'cta_text' => $data['cta_text'] ?? null,
                 'status' => $data['status'] ?? $pricingPackage->status,
                 'sort_order' => $data['sort_order'] ?? 0,
             ]);
@@ -106,11 +136,32 @@ class PricingPackageController extends Controller
             if (isset($data['features'])) {
                 $pricingPackage->features()->delete();
 
-                foreach ($data['features'] as $feature) {
-                    $pricingPackage->features()->create($feature);
+                foreach ($data['features'] as $index => $feature) {
+                    $featureText = is_array($feature)
+                        ? ($feature['feature'] ?? $feature['title'] ?? '')
+                        : $feature;
+
+                    if (trim((string) $featureText) === '') {
+                        continue;
+                    }
+
+                    $pricingPackage->features()->create([
+                        'feature' => $featureText,
+                        'sort_order' => is_array($feature)
+                            ? ($feature['sort_order'] ?? $index)
+                            : $index,
+                    ]);
                 }
             }
         });
+
+        ActivityLogger::log(
+            'updated',
+            'pricing_packages',
+            $pricingPackage,
+            $oldValues,
+            $pricingPackage->fresh()->toArray()
+        );
 
         return response()->json(
             $pricingPackage->fresh()->load('features')
@@ -119,7 +170,17 @@ class PricingPackageController extends Controller
 
     public function destroy(PricingPackage $pricingPackage)
     {
+        $oldValues = $pricingPackage->toArray();
+
         $pricingPackage->delete();
+
+        ActivityLogger::log(
+            'deleted',
+            'pricing_packages',
+            $pricingPackage,
+            $oldValues,
+            null
+        );
 
         return response()->json([
             'message' => 'Pricing package deleted successfully.',
@@ -128,9 +189,19 @@ class PricingPackageController extends Controller
 
     public function publish(PricingPackage $pricingPackage)
     {
+        $oldValues = $pricingPackage->toArray();
+
         $pricingPackage->update([
             'status' => 'published',
         ]);
+
+        ActivityLogger::log(
+            'published',
+            'pricing_packages',
+            $pricingPackage,
+            $oldValues,
+            $pricingPackage->fresh()->toArray()
+        );
 
         return response()->json([
             'message' => 'Pricing package published successfully.',

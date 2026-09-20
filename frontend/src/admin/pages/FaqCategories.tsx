@@ -1,4 +1,5 @@
 import SimpleCrudPage from '../components/SimpleCrudPage';
+
 import type { ColumnConfig } from '../components/DataTable';
 import type { FieldConfig } from '../components/FormField';
 import type { FaqCategoryResource } from '../types';
@@ -25,7 +26,7 @@ export default function FaqCategories() {
     <SimpleCrudPage<FaqCategoryResource>
       resourceLabel="Category"
       resourceLabelPlural="FAQ Categories"
-      endpoint="/admin/faqs/categories"
+      endpoint="/admin/faq-categories"
       columns={columns}
       formFields={formFields}
       defaultFormValues={{

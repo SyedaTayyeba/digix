@@ -15,7 +15,6 @@ import {
   apiPut,
   type ApiError,
 } from '../../lib/api';
-
 import type { HomepageSettings } from '../types';
 
 const ENDPOINT = '/admin/homepage';
@@ -55,6 +54,7 @@ function Section({
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black/10 p-5">
+   
       <h2 className="mb-4 text-sm font-medium uppercase tracking-wide text-white/60">
         {title}
       </h2>

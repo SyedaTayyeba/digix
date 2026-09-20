@@ -38,6 +38,95 @@ export default function FormField({
     '[&::-webkit-inner-spin-button]:appearance-none ' +
     '[&::-webkit-outer-spin-button]:appearance-none';
 
+  /*
+   * List fields can come from the API in two formats:
+   *
+   * Features:
+   *   [{ title: "Google Ads" }]
+   *
+   * Process steps:
+   *   [{ title: "Audit account", description: "..." }]
+   *
+   * They can also temporarily be simple strings while typing.
+   *
+   * For display in the textarea, we only need the title.
+   */
+  function getListDisplayValue(value: unknown): string {
+    if (!Array.isArray(value)) {
+      return '';
+    }
+
+    return value
+      .map((item) => {
+        if (typeof item === 'string') {
+          return item;
+        }
+
+        if (
+          item &&
+          typeof item === 'object' &&
+          'title' in item
+        ) {
+          return String(
+            (item as { title?: unknown }).title ?? ''
+          );
+        }
+
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  /*
+   * Convert textarea lines into the structure expected
+   * by the Laravel Service API.
+   *
+   * Features:
+   *   [{ title: "Feature 1" }]
+   *
+   * Process steps:
+   *   [{ title: "Step 1", description: null }]
+   */
+  function handleListChange(
+    name: string,
+    rawValue: string,
+  ) {
+    const items = rawValue
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (name === 'features') {
+      onChange(
+        name,
+        items.map((title) => ({
+          title,
+        })),
+      );
+
+      return;
+    }
+
+    if (name === 'process_steps') {
+      onChange(
+        name,
+        items.map((title) => ({
+          title,
+          description: null,
+        })),
+      );
+
+      return;
+    }
+
+    /*
+     * Keep the generic list behavior for any other
+     * list field used elsewhere in the admin panel.
+     */
+    onChange(name, items);
+  }
+
   return (
     <div>
       <label
@@ -45,7 +134,9 @@ export default function FormField({
         className="mb-1 block text-xs text-white/60"
       >
         {field.label}
-        {field.required && <span className="text-brand"> *</span>}
+        {field.required && (
+          <span className="text-brand"> *</span>
+        )}
       </label>
 
       {field.type === 'textarea' && (
@@ -54,7 +145,9 @@ export default function FormField({
           rows={field.rows ?? 4}
           value={(value as string) ?? ''}
           placeholder={field.placeholder}
-          onChange={(e) => onChange(field.name, e.target.value)}
+          onChange={(e) =>
+            onChange(field.name, e.target.value)
+          }
           className={baseInputClasses}
         />
       )}
@@ -64,16 +157,12 @@ export default function FormField({
           <textarea
             id={field.name}
             rows={field.rows ?? 4}
-            value={
-              Array.isArray(value)
-                ? (value as string[]).join('\n')
-                : ''
-            }
+            value={getListDisplayValue(value)}
             placeholder={field.placeholder}
             onChange={(e) =>
-              onChange(
+              handleListChange(
                 field.name,
-                e.target.value.split('\n').filter(Boolean)
+                e.target.value,
               )
             }
             className={baseInputClasses}
@@ -91,10 +180,16 @@ export default function FormField({
         <select
           id={field.name}
           value={(value as string) ?? ''}
-          onChange={(e) => onChange(field.name, e.target.value)}
+          onChange={(e) =>
+            onChange(field.name, e.target.value)
+          }
           className={`${baseInputClasses} text-black`}
         >
-          <option value="" disabled className="text-black">
+          <option
+            value=""
+            disabled
+            className="text-black"
+          >
             Select…
           </option>
 
@@ -117,7 +212,10 @@ export default function FormField({
             type="checkbox"
             checked={Boolean(value)}
             onChange={(e) =>
-              onChange(field.name, e.target.checked)
+              onChange(
+                field.name,
+                e.target.checked,
+              )
             }
             className="h-4 w-4 rounded border-white/30 bg-white/5 accent-[#2fbcba]"
           />
@@ -126,18 +224,21 @@ export default function FormField({
         </label>
       )}
 
-      {(field.type === 'text' || field.type === 'number') && (
+      {(field.type === 'text' ||
+        field.type === 'number') && (
         <input
           id={field.name}
           type={field.type}
-          value={(value as string | number) ?? ''}
+          value={
+            (value as string | number) ?? ''
+          }
           placeholder={field.placeholder}
           onChange={(e) =>
             onChange(
               field.name,
               field.type === 'number'
                 ? Number(e.target.value)
-                : e.target.value
+                : e.target.value,
             )
           }
           className={

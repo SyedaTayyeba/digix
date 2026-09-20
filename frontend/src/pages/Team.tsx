@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 
 import PageHero from '../components/ui/PageHero';
+import { accentAt } from '../lib/accents';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type TeamMember = {
   id?: number;
@@ -20,7 +22,7 @@ type TeamResponse =
     };
 
 const cardClass =
-  'rounded-2xl border border-white/10 bg-black/25 p-6 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand/25 hover:bg-black/35 sm:p-7';
+  'surface-card surface-card-hover p-6 sm:p-7';
 
 export default function Team() {
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -52,6 +54,7 @@ export default function Team() {
 
   return (
     <div className="min-h-screen">
+      <PageOverlay />
       <PageHero
         eyebrow="Team"
         title="The people behind the work"
@@ -59,7 +62,7 @@ export default function Team() {
       />
 
       <section className="px-5 py-12 sm:px-6 sm:py-6 md:px-4 lg:py-2">
-        <div className="mx-auto grid max-w-7xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {loading ? (
             [1, 2, 3, 4].map((item) => (
               <div key={item} className={cardClass}>
@@ -75,7 +78,8 @@ export default function Team() {
               </div>
             ))
           ) : team.length > 0 ? (
-            team.map((member) => {
+            team.map((member, index) => {
+              const accent = accentAt(index);
               const image = member.photo ?? member.image;
 
               return (
@@ -84,18 +88,19 @@ export default function Team() {
                     member.id ??
                     `${member.name}-${member.role ?? ''}`
                   }
-                  className={cardClass}
+                  className={`${cardClass} group relative overflow-hidden`}
                 >
-                  <div className="mb-5">
+                  <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full blur-3xl opacity-60 ${accent.glow}`} />
+                  <div className="relative mb-5">
                     {image ? (
                       <img
                         src={image}
                         alt={member.name}
-                        className="h-20 w-20 rounded-full border border-white/10 object-cover"
+                        className="h-20 w-20 rounded-full border border-brand/15 object-cover"
                       />
                     ) : (
                       <div
-                        className="flex h-20 w-20 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl font-medium text-white/60"
+                        className={`flex h-20 w-20 items-center justify-center rounded-full border text-2xl font-bold ${accent.chip}`}
                         aria-hidden="true"
                       >
                         {member.name.charAt(0).toUpperCase()}
@@ -103,18 +108,18 @@ export default function Team() {
                     )}
                   </div>
 
-                  <h2 className="text-base font-medium text-white">
+                  <h2 className="relative text-base font-bold text-white">
                     {member.name}
                   </h2>
 
                   {member.role && (
-                    <p className="mt-1 text-xs font-medium text-brand">
+                    <p className={`relative mt-1 text-xs font-bold ${accent.text}`}>
                       {member.role}
                     </p>
                   )}
 
                   {member.bio && (
-                    <p className="mt-4 text-sm leading-7 text-white/65">
+                    <p className="relative mt-4 text-sm leading-7 text-white">
                       {member.bio}
                     </p>
                   )}
@@ -122,8 +127,8 @@ export default function Team() {
               );
             })
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-black/20 px-6 py-12 text-center backdrop-blur-xl sm:col-span-2 lg:col-span-4">
-              <p className="text-sm text-white/50">
+            <div className="rounded-2xl border border-brand/15 bg-ink-900/60 px-6 py-12 text-center backdrop-blur-xl sm:col-span-2 lg:col-span-4">
+              <p className="text-sm text-white">
                 Our team information will be available soon.
               </p>
             </div>

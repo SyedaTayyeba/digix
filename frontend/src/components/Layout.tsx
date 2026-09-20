@@ -15,11 +15,7 @@ export default function Layout() {
   return (
     <div className="relative flex min-h-screen flex-col text-white">
       <ScrollVideo />
-      {/* Darkens the video just enough that plain white text (headings,
-          body copy, card text on inner pages) stays readable regardless
-          of how bright the current video frame is. Sits above the video,
-          below all real content — video keeps playing/animating through
-          it, nothing about the scroll-scrub is affected. */}
+      {/* Darkens the video just enough that plain white text stays readable. */}
       <div className="fixed inset-0 z-[1] bg-black/50 pointer-events-none" aria-hidden="true" />
       <div className="relative z-10 flex min-h-screen flex-col">
         <Navbar />

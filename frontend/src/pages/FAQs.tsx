@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import PageHero from '../components/ui/PageHero';
 import Accordion from '../components/ui/Accordion';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type FAQ = {
   id?: number;
@@ -22,7 +23,7 @@ type FAQCategory = {
 };
 
 const cardClass =
-  'border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:border-brand/30 hover:bg-black/35';
+  'surface-card surface-card-hover';
 
 export default function FAQs() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
@@ -110,6 +111,7 @@ export default function FAQs() {
 
   return (
     <div className="overflow-hidden bg-transparent text-white">
+      <PageOverlay />
       <PageHero
         eyebrow="FAQs"
         title="Common questions"
@@ -118,19 +120,18 @@ export default function FAQs() {
       />
 
       <section className="relative px-5 py-4 sm:px-6 md:px-4 lg:py-2">
-        <div className="absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-brand/10 blur-[120px]" />
 
         <div className="relative mx-auto max-w-5xl">
           <div className="mb-10">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
+            <p className="eyebrow text-brand-300">
               Need to know
             </p>
 
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Answers before you ask.
             </h2>
 
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white">
               Search through our most common questions or browse them by
               category.
             </p>
@@ -142,7 +143,7 @@ export default function FAQs() {
             >
               <Search
                 size={17}
-                className="shrink-0 text-brand"
+                className="shrink-0 text-brand-300"
               />
 
               <input
@@ -150,14 +151,14 @@ export default function FAQs() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search questions..."
-                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/35"
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-[#b5d0d3]"
               />
 
               {query && (
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="shrink-0 text-xs font-medium text-white/40 transition-colors hover:text-brand"
+                  className="shrink-0 text-xs font-medium text-white transition-colors hover:text-brand-300"
                 >
                   Clear
                 </button>
@@ -202,7 +203,7 @@ export default function FAQs() {
                     <div className="mb-6 flex items-center gap-3">
                       <span className="h-2 w-2 rounded-full bg-brand shadow-[0_0_12px_rgba(47,188,186,0.6)]" />
 
-                      <h2 className="text-lg font-black text-white">
+                      <h2 className="text-lg font-extrabold text-white">
                         {category}
                       </h2>
 
@@ -211,7 +212,7 @@ export default function FAQs() {
                       </span>
                     </div>
 
-                    <div className="overflow-hidden rounded-xl border border-white/10 bg-black/15">
+                    <div className="overflow-hidden rounded-xl border border-brand/15 bg-ink-900/60">
                       <Accordion
                         items={items.map((faq) => ({
                           question: faq.question,
@@ -227,7 +228,7 @@ export default function FAQs() {
             <div
               className={`rounded-2xl border p-10 text-center ${cardClass}`}
             >
-              <p className="text-sm text-white/45">
+              <p className="text-sm text-white">
                 FAQs will be available soon.
               </p>
             </div>
@@ -244,7 +245,7 @@ export default function FAQs() {
                   No questions found.
                 </p>
 
-                <p className="mt-2 text-xs text-white/40">
+                <p className="mt-2 text-xs text-white">
                   Try searching with different keywords.
                 </p>
               </div>

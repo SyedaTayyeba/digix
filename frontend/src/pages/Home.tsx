@@ -1,8 +1,15 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import Reveal from "../components/Reveal";
+import { accentAt } from "../lib/accents";
 import GlassBadge from "../components/GlassBadge";
 import GlassCard from "../components/ui/GlassCard";
 import { api } from "../lib/api";
@@ -60,18 +67,9 @@ const FALLBACK_HERO = {
 };
 
 const FALLBACK_STATS = [
-  {
-    value: "AED 1M+",
-    label: "Ad spend managed",
-  },
-  {
-    value: "29",
-    label: "Clients across UAE & GCC",
-  },
-  {
-    value: "5",
-    label: "Years in this market",
-  },
+  { value: "AED 1M+", label: "Ad spend managed" },
+  { value: "29", label: "Clients across UAE & GCC" },
+  { value: "5", label: "Years in this market" },
 ];
 
 const FALLBACK_CTA = {
@@ -81,13 +79,16 @@ const FALLBACK_CTA = {
   button: "Book a Strategy Call",
 };
 
-const cardClass =
-  "border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:bg-black/35";
+const VIDEO_BACKGROUND =
+  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260729_102822_0e6c87e8-c141-4744-bf32-ad30db296371.mp4";
+
+const darkCard = "surface-card";
 
 export default function Home() {
   const [homepage, setHomepage] = useState<HomepageResponse | null>(null);
-
   const [loading, setLoading] = useState(true);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const [leadForm, setLeadForm] = useState({
     name: "",
@@ -98,35 +99,107 @@ export default function Home() {
   });
 
   const [leadSubmitting, setLeadSubmitting] = useState(false);
-
   const [leadSuccess, setLeadSuccess] = useState(false);
-
   const [leadError, setLeadError] = useState("");
+
+  /*
+  |--------------------------------------------------------------------------
+  | Scroll Controlled Background Video
+  |--------------------------------------------------------------------------
+  */
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) return;
+
+    let animationFrame = 0;
+
+    const updateVideoFromScroll = () => {
+      cancelAnimationFrame(animationFrame);
+
+      animationFrame = requestAnimationFrame(() => {
+        if (!video.duration || !Number.isFinite(video.duration)) {
+          return;
+        }
+
+        const maxScroll =
+          document.documentElement.scrollHeight - window.innerHeight;
+
+        if (maxScroll <= 0) {
+          video.currentTime = 0;
+          return;
+        }
+
+        const scrollProgress = Math.min(
+          Math.max(window.scrollY / maxScroll, 0),
+          1
+        );
+
+        video.currentTime = scrollProgress * video.duration;
+      });
+    };
+
+    const handleLoadedMetadata = () => {
+      updateVideoFromScroll();
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+
+    window.addEventListener("scroll", updateVideoFromScroll, {
+      passive: true,
+    });
+
+    window.addEventListener("resize", updateVideoFromScroll);
+
+    updateVideoFromScroll();
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+
+      video.removeEventListener(
+        "loadedmetadata",
+        handleLoadedMetadata
+      );
+
+      window.removeEventListener("scroll", updateVideoFromScroll);
+      window.removeEventListener("resize", updateVideoFromScroll);
+    };
+  }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Homepage API
+  |--------------------------------------------------------------------------
+  */
 
   useEffect(() => {
     let mounted = true;
 
-    async function loadHomepage() {
+    const loadHomepage = async () => {
       try {
-        const response = await api.get<HomepageApiResponse>("/homepage");
+        const response = await api.get<HomepageApiResponse>(
+          "/homepage"
+        );
 
-        if (!mounted) {
-          return;
+        if (!mounted) return;
+
+        const payload =
+          "data" in response.data
+            ? response.data.data
+            : response.data;
+
+        setHomepage(payload);
+      } catch {
+        if (mounted) {
+          setHomepage(null);
         }
-        const payload = response.data;
-
-        const data: HomepageResponse =
-          "data" in payload ? payload.data : payload;
-
-        setHomepage(data);
-      } catch (error) {
-        console.error("Failed to load homepage:", error);
       } finally {
         if (mounted) {
           setLoading(false);
         }
       }
-    }
+    };
 
     loadHomepage();
 
@@ -134,6 +207,12 @@ export default function Home() {
       mounted = false;
     };
   }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Homepage Data
+  |--------------------------------------------------------------------------
+  */
 
   const hero = {
     ...FALLBACK_HERO,
@@ -145,10 +224,8 @@ export default function Home() {
       ? homepage.stats
       : FALLBACK_STATS;
 
-  // Only the 3 services selected from the admin panel are shown.
-  const homepageServices = Array.isArray(homepage?.services)
-    ? homepage.services.slice(0, 3)
-    : [];
+  // Services are loaded from the backend.
+  const services = homepage?.services ?? [];
 
   const testimonials = homepage?.testimonials ?? [];
 
@@ -157,25 +234,53 @@ export default function Home() {
     ...(homepage?.cta ?? {}),
   };
 
+  /*
+  |--------------------------------------------------------------------------
+  | Lead Form
+  |--------------------------------------------------------------------------
+  */
+
   const handleLeadChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    event: ChangeEvent<
+      HTMLInputElement | HTMLSelectElement
+    >
   ) => {
-    const { name, value } = e.target;
+    const { name, value } = event.target;
 
     setLeadForm((current) => ({
       ...current,
       [name]: value,
-      ...(name === "service" && value !== "Other" ? { other_service: "" } : {}),
+
+      // Clear custom service when user switches away from Other.
+      ...(name === "service" && value !== "Other"
+        ? { other_service: "" }
+        : {}),
     }));
 
     setLeadError("");
   };
 
-  const handleLeadSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleLeadSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
+    event.preventDefault();
 
-    if (leadForm.service === "Other" && !leadForm.other_service.trim()) {
-      setLeadError("Please tell us which service you need.");
+    /*
+    |--------------------------------------------------------------------------
+    | Validation
+    |--------------------------------------------------------------------------
+    */
+
+    if (!leadForm.service) {
+      setLeadError("Please select a service.");
+      return;
+    }
+
+    if (
+      leadForm.service === "Other" &&
+      !leadForm.other_service.trim()
+    ) {
+      setLeadError("Please specify the service you need.");
       return;
     }
 
@@ -183,20 +288,34 @@ export default function Home() {
     setLeadError("");
 
     try {
+      /*
+      |--------------------------------------------------------------------------
+      | Create Lead
+      |--------------------------------------------------------------------------
+      */
+
       await api.post("/leads", {
-        name: leadForm.name,
-        phone: leadForm.phone,
-        email: leadForm.email,
+        name: leadForm.name.trim(),
+        phone: leadForm.phone.trim(),
+        email: leadForm.email.trim(),
         source: "homepage_hero",
         stage: "new",
+
         form_data: {
           service: leadForm.service,
+
           other_service:
-            leadForm.service === "Other" ? leadForm.other_service.trim() : "",
+            leadForm.service === "Other"
+              ? leadForm.other_service.trim()
+              : "",
         },
       });
 
-      setLeadSuccess(true);
+      /*
+      |--------------------------------------------------------------------------
+      | Reset Form
+      |--------------------------------------------------------------------------
+      */
 
       setLeadForm({
         name: "",
@@ -205,11 +324,11 @@ export default function Home() {
         service: "",
         other_service: "",
       });
-    } catch (error) {
+
+      setLeadSuccess(true);
+    } catch {
       setLeadError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again.",
+        "Something went wrong. Please try again or contact us directly."
       );
     } finally {
       setLeadSubmitting(false);
@@ -217,519 +336,679 @@ export default function Home() {
   };
 
   return (
-    <div>
-      {/* Hero */}
-      <section className="section-viewport flex flex-col justify-center gap-8 px-5 pb-12 sm:px-8 md:px-12">
-        <div className="grid items-center gap-10 lg:grid-cols-[1fr_360px]">
-          <div>
-            <Reveal delayMs={100}>
-              <GlassBadge>{hero.eyebrow}</GlassBadge>
-            </Reveal>
+    <main className="relative min-h-screen overflow-hidden bg-[#071A24] text-white">
+      {/* =====================================================
+          FULL PAGE VIDEO BACKGROUND
+      ===================================================== */}
 
-            <Reveal delayMs={220} className="max-w-3xl">
-              <h1 className="text-5xl font-normal leading-[1.05] tracking-tight text-white drop-shadow-lg sm:text-6xl lg:text-7xl">
-                We report revenue
-                <br />
-                Not <span className="impressions-highlight">impressions</span>
-              </h1>
-            </Reveal>
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <video
+          ref={videoRef}
+          className="h-full w-full object-cover"
+          src={VIDEO_BACKGROUND}
+          muted
+          playsInline
+          preload="metadata"
+        />
 
-            <Reveal delayMs={340} className="max-w-lg">
-              <p className="text-lg leading-relaxed text-white/85 drop-shadow-md">
-                {hero.description}
-              </p>
-            </Reveal>
+        {/* Light global overlay */}
+        <div className="absolute inset-0 bg-[#071A24]/25" />
 
-            <Reveal delayMs={440}>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  to="/book-consultation"
-                  className="inline-flex items-center gap-1 rounded-full bg-brand px-5 py-2.5 text-sm font-medium text-black transition-colors duration-300 hover:bg-brand/85"
-                >
-                  {hero.primary_cta}
-                  <ChevronRight size={16} />
-                </Link>
+        {/* Subtle navy tint */}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,26,36,0.38)_0%,rgba(7,26,36,0.30)_45%,rgba(7,26,36,0.52)_100%)]" />
 
-                <Link
-                  to="/services"
-                  className="inline-flex items-center rounded-full border border-brand/40 bg-brand/10 px-5 py-2.5 text-sm text-white backdrop-blur-md transition-colors duration-300 hover:bg-brand/20"
-                >
-                  {hero.secondary_cta}
-                </Link>
-              </div>
-            </Reveal>
-          </div>
+        {/* Readability gradient */}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,26,36,0.55)_0%,rgba(7,26,36,0.20)_45%,rgba(7,26,36,0.28)_100%)]" />
+      </div>
 
-          <Reveal delayMs={300}>
-            <GlassCard
-              className={`w-full max-w-[360px] justify-self-end p-5 ${cardClass}`}
-            >
-              {!leadSuccess ? (
-                <>
-                  <div className="mb-4">
-                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
-                      Start a conversation
-                    </p>
+      {/* =====================================================
+          CONTENT LAYER
+      ===================================================== */}
 
-                    <h2 className="mt-2 text-xl font-black text-white">
-                      Let&apos;s talk about your growth.
-                    </h2>
+      <div className="relative z-10">
+        {/* =====================================================
+            HERO
+        ===================================================== */}
 
-                    <p className="mt-1.5 text-xs leading-relaxed text-white/50">
-                      Tell us a little about your business.
-                    </p>
+        <section className="relative min-h-[92vh] overflow-hidden">
+          <div className="section-viewport relative mx-auto flex min-h-[92vh] w-full max-w-7xl flex-col justify-center px-5 py-20 sm:px-8 md:px-12 lg:px-16">
+            <div className="grid items-center gap-12 lg:grid-cols-[1.08fr_0.92fr]">
+              {/* Hero Content */}
+              <Reveal>
+                <div className="max-w-3xl">
+                  <div className="mb-6">
+                    <GlassBadge>
+                      <span className="mr-2 inline-block h-2 w-2 rounded-full bg-brand shadow-[0_0_10px_rgba(47,188,186,0.9)]" />
+                      {hero.eyebrow}
+                    </GlassBadge>
                   </div>
 
-                  <form onSubmit={handleLeadSubmit} className="space-y-3">
-                    <input
-                      type="text"
-                      name="name"
-                      value={leadForm.name}
-                      onChange={handleLeadChange}
-                      placeholder="Full name"
-                      required
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-brand/50"
-                    />
+                  <h1 className="max-w-4xl text-5xl font-extrabold leading-[1.02] tracking-[-0.04em] text-white sm:text-6xl md:text-7xl">
+                    {hero.title?.split("impressions")[0]}
 
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={leadForm.phone}
-                      onChange={handleLeadChange}
-                      placeholder="Phone / WhatsApp"
-                      required
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-brand/50"
-                    />
+                    <span className="text-gradient-brand">
+                      impressions
+                    </span>
+                    .
+                  </h1>
 
-                    <input
-                      type="email"
-                      name="email"
-                      value={leadForm.email}
-                      onChange={handleLeadChange}
-                      placeholder="Email address"
-                      required
-                      className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-brand/50"
-                    />
+                  <p className="mt-7 max-w-2xl text-base leading-7 text-white sm:text-lg sm:leading-8">
+                    {hero.description}
+                  </p>
 
-                    <select
-                      name="service"
-                      value={leadForm.service}
-                      onChange={handleLeadChange}
-                      required
-                      className="w-full rounded-lg border border-white/10 bg-[#111] px-3 py-2.5 text-sm text-white outline-none focus:border-brand/50"
+                  <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+                    <Link
+                      to="/book-consultation"
+                      className="btn-primary min-h-12"
                     >
-                      <option value="">Select a service</option>
+                      {hero.primary_cta}
 
-                      {homepageServices.map((service) => (
-                        <option
-                          key={service.id ?? service.slug}
-                          value={service.title}
-                        >
-                          {service.title}
-                        </option>
-                      ))}
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Link>
 
-                      <option value="Other">Other</option>
-                    </select>
-
-                    {leadForm.service === "Other" && (
-                      <input
-                        type="text"
-                        name="other_service"
-                        value={leadForm.other_service}
-                        onChange={handleLeadChange}
-                        placeholder="Which service do you need?"
-                        required
-                        autoFocus
-                        className="w-full rounded-lg border border-brand/20 bg-black/20 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-brand/50"
-                      />
-                    )}
-
-                    {leadError && (
-                      <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-300">
-                        {leadError}
-                      </p>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={leadSubmitting}
-                      className="w-full rounded-lg bg-brand px-4 py-2.5 text-sm font-bold text-black transition-colors duration-300 hover:bg-brand/85 disabled:cursor-not-allowed disabled:opacity-50"
+                    <a
+                      href="#results"
+                      className="btn-ghost min-h-12"
                     >
-                      {leadSubmitting ? "Sending..." : "Get Started →"}
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-brand/20 bg-brand/10 text-xl text-brand">
-                    ✓
+                      {hero.secondary_cta}
+                    </a>
                   </div>
-
-                  <h3 className="mt-4 text-xl font-black text-white">
-                    Thanks for reaching out!
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-relaxed text-white/55">
-                    We&apos;ve received your enquiry and will get back to you
-                    shortly.
-                  </p>
-                </div>
-              )}
-            </GlassCard>
-          </Reveal>
-        </div>
-      </section>
-
-      <div>
-        {/* Statistics */}
-        <section className="border-t border-white/10 px-5 py-14 sm:px-8 md:px-12">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 sm:grid-cols-3">
-            {stats.map((stat) => (
-              <Reveal key={stat.label}>
-                <div className={`${cardClass} rounded-2xl border p-6`}>
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
-                    Metric
-                  </p>
-
-                  <p className="mt-3 text-3xl font-black tracking-tight text-brand sm:text-4xl">
-                    {stat.value}
-                  </p>
-
-                  <p className="mt-2 text-sm font-medium text-white/55">
-                    {stat.label}
-                  </p>
                 </div>
               </Reveal>
-            ))}
-          </div>
-        </section>
 
-        {/* Services */}
-        <section className="border-t border-white/10 px-5 py-20 sm:px-8 md:px-12">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-                  Services
-                </p>
+              {/* Lead Form */}
+              <Reveal>
+                <div
+                  className={`${darkCard} rounded-3xl p-6 shadow-[0_30px_80px_-30px_rgba(47,188,186,0.4)] sm:p-8`}
+                >
+                  {!leadSuccess ? (
+                    <>
+                      <div className="mb-7">
+                        <p className="eyebrow text-brand-300">
+                          Start a conversation
+                        </p>
 
-                <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                  What we do
-                </h2>
-              </div>
+                        <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">
+                          Tell us what you need.
+                        </h2>
 
-              <Link
-                to="/services"
-                className="text-sm font-bold text-brand transition-colors hover:text-white"
-              >
-                View all services →
-              </Link>
-            </div>
-
-            {loading ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {[1, 2, 3].map((item) => (
-                  <GlassCard key={item} className={`${cardClass} p-6`}>
-                    <div className="h-10 w-10 animate-pulse rounded-xl bg-white/10" />
-
-                    <div className="mt-6 h-5 w-40 animate-pulse rounded bg-white/10" />
-
-                    <div className="mt-4 h-3 w-full animate-pulse rounded bg-white/10" />
-
-                    <div className="mt-2 h-3 w-5/6 animate-pulse rounded bg-white/10" />
-
-                    <div className="mt-6 h-3 w-24 animate-pulse rounded bg-brand/10" />
-                  </GlassCard>
-                ))}
-              </div>
-            ) : homepageServices.length > 0 ? (
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                {homepageServices.map((service, index) => (
-                  <GlassCard
-                    key={service.id ?? service.slug}
-                    className={`group relative overflow-hidden p-6 ${cardClass}`}
-                  >
-                    <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-brand/10 blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                    <div className="relative">
-                      <div className="flex items-center justify-between">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand/20 bg-brand/10 font-mono text-xs font-bold text-brand">
-                          0{index + 1}
-                        </span>
-
-                        <ChevronRight
-                          size={18}
-                          className="text-white/20 transition-all duration-300 group-hover:translate-x-1 group-hover:text-brand"
-                        />
+                        <p className="mt-2 text-sm leading-6 text-white">
+                          We’ll get back to you with the next step.
+                        </p>
                       </div>
 
-                      <h3 className="mt-7 text-lg font-black text-white">
-                        {service.title}
-                      </h3>
-
-                      <p className="mt-3 text-sm leading-6 text-white/55">
-                        {service.summary ??
-                          "Explore this service and see how we can help your business grow."}
-                      </p>
-
-                      <Link
-                        to={`/services/${service.slug}`}
-                        className="mt-5 inline-flex items-center gap-1 text-sm font-bold text-brand transition-colors hover:text-white"
+                      <form
+                        onSubmit={handleLeadSubmit}
+                        className="space-y-4"
                       >
-                        View Details
-                        <ChevronRight size={14} />
-                      </Link>
+                        {/* Name */}
+                        <div>
+                          <label
+                            htmlFor="name"
+                            className="mb-2 block text-sm font-semibold text-white"
+                          >
+                            Name
+                          </label>
+
+                          <input
+                            id="name"
+                            name="name"
+                            value={leadForm.name}
+                            onChange={handleLeadChange}
+                            required
+                            className="field"
+                            placeholder="Your name"
+                          />
+                        </div>
+
+                        {/* Phone + Email */}
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          <div>
+                            <label
+                              htmlFor="phone"
+                              className="mb-2 block text-sm font-semibold text-white"
+                            >
+                              Phone
+                            </label>
+
+                            <input
+                              id="phone"
+                              name="phone"
+                              value={leadForm.phone}
+                              onChange={handleLeadChange}
+                              required
+                              className="field"
+                              placeholder="+971..."
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              htmlFor="email"
+                              className="mb-2 block text-sm font-semibold text-white"
+                            >
+                              Email
+                            </label>
+
+                            <input
+                              id="email"
+                              type="email"
+                              name="email"
+                              value={leadForm.email}
+                              onChange={handleLeadChange}
+                              className="field"
+                              placeholder="you@company.com"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Service */}
+                        <div>
+                          <label
+                            htmlFor="service"
+                            className="mb-2 block text-sm font-semibold text-white"
+                          >
+                            Service
+                          </label>
+
+                          <select
+                            id="service"
+                            name="service"
+                            value={leadForm.service}
+                            onChange={handleLeadChange}
+                            required
+                            className="field"
+                          >
+                            <option value="">
+                              {services.length > 0
+                                ? "Select a service"
+                                : "No services available"}
+                            </option>
+
+                            {/* Backend Services */}
+                            {services.map((service) => (
+                              <option
+                                key={
+                                  service.id ??
+                                  service.slug
+                                }
+                                value={service.title}
+                              >
+                                {service.title}
+                              </option>
+                            ))}
+
+                            {/* Always available custom option */}
+                            <option value="Other">
+                              Other
+                            </option>
+                          </select>
+                        </div>
+
+                        {/* Other Service */}
+                        {leadForm.service === "Other" && (
+                          <div>
+                            <label
+                              htmlFor="other_service"
+                              className="mb-2 block text-sm font-semibold text-white"
+                            >
+                              Tell us more
+                            </label>
+
+                            <input
+                              id="other_service"
+                              name="other_service"
+                              value={leadForm.other_service}
+                              onChange={handleLeadChange}
+                              required
+                              className="field"
+                              placeholder="What do you need help with?"
+                            />
+                          </div>
+                        )}
+
+                        {/* Error */}
+                        {leadError && (
+                          <div className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">
+                            {leadError}
+                          </div>
+                        )}
+
+                        {/* Submit */}
+                        <button
+                          type="submit"
+                          disabled={leadSubmitting}
+                          className="btn-primary w-full !py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {leadSubmitting
+                            ? "Sending..."
+                            : "Book a Strategy Call"}
+                        </button>
+                      </form>
+                    </>
+                  ) : (
+                    <div className="flex min-h-[360px] flex-col items-center justify-center text-center">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full border border-brand/40 bg-brand/20 text-brand-200 shadow-[0_0_40px_rgba(47,188,186,0.35)]">
+                        <svg
+                          className="h-7 w-7"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M5 12l4 4L19 6" />
+                        </svg>
+                      </div>
+
+                      <h2 className="mt-6 text-2xl font-semibold text-white">
+                        Thank you.
+                      </h2>
+
+                      <p className="mt-3 max-w-sm text-sm leading-6 text-white">
+                        Your request has been received. We’ll be in touch
+                        shortly.
+                      </p>
                     </div>
-                  </GlassCard>
-                ))}
-              </div>
-            ) : (
-              <GlassCard className={`${cardClass} p-8 text-center`}>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
-                  Services
-                </p>
-
-                <h3 className="mt-3 text-xl font-black text-white">
-                  Services coming soon
-                </h3>
-
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/50">
-                  Our featured services will appear here once they are selected
-                  from the admin panel.
-                </p>
-
-                <Link
-                  to="/services"
-                  className="mt-6 inline-flex items-center gap-1 rounded-full border border-brand/30 bg-brand/10 px-5 py-2.5 text-sm font-bold text-brand transition-all duration-300 hover:bg-brand/20"
-                >
-                  Browse Services
-                  <ChevronRight size={15} />
-                </Link>
-              </GlassCard>
-            )}
+                  )}
+                </div>
+              </Reveal>
+            </div>
           </div>
         </section>
 
-        {/* Problem */}
-        <section className="border-t border-white/10 px-5 py-20 sm:px-8 md:px-12">
-          <div className="mx-auto max-w-6xl">
-            <GlassCard
-              className={`relative overflow-hidden p-7 sm:p-10 ${cardClass}`}
-            >
-              <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-brand/10 blur-[90px]" />
+        {/* =====================================================
+            STATS
+        ===================================================== */}
 
-              <div className="relative max-w-3xl">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
+        <section
+          id="results"
+          className="band px-5 py-16 sm:px-8 md:px-12"
+        >
+          <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-3">
+            {stats.map((stat, index) => {
+              const accent = accentAt(index);
+
+              return (
+                <Reveal key={`${stat.label}-${index}`}>
+                  <div className="surface-card relative overflow-hidden p-6">
+                    <div
+                      className={`absolute inset-x-0 top-0 h-1 ${accent.solid}`}
+                    />
+
+                    <div
+                      className={`absolute -right-10 -top-10 h-32 w-32 rounded-full blur-3xl ${accent.glow}`}
+                    />
+
+                    <p
+                      className={`relative text-4xl font-extrabold tracking-tight sm:text-5xl ${accent.text}`}
+                    >
+                      {stat.value}
+                    </p>
+
+                    <p className="relative mt-2 text-sm font-medium text-white">
+                      {stat.label}
+                    </p>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* =====================================================
+            SERVICES
+        ===================================================== */}
+
+        <section className="band-alt px-5 py-24 sm:px-8 md:px-12">
+          <div className="mx-auto max-w-7xl">
+            <Reveal>
+              <div className="max-w-2xl">
+                <p className="eyebrow text-brand-300">
+                  What we do
+                </p>
+
+                <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                  Services built around measurable growth.
+                </h2>
+
+                <p className="mt-4 text-base leading-7 text-white">
+                  Strategy, execution and optimisation designed to move
+                  commercial numbers.
+                </p>
+              </div>
+            </Reveal>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {services.length > 0 ? (
+                services.map((service, index) => {
+                  const accent = accentAt(index);
+
+                  return (
+                    <Reveal key={service.id ?? service.slug}>
+                      <div
+                        className={`${darkCard} surface-card-hover group relative h-full overflow-hidden rounded-2xl p-6 ${accent.hoverBorder}`}
+                      >
+                        <div
+                          className={`absolute -right-16 -top-16 h-40 w-40 rounded-full blur-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100 ${accent.glow}`}
+                        />
+
+                        <div className="relative">
+                          <div className="mb-6 flex items-center justify-between">
+                            <span
+                              className={`flex h-10 w-10 items-center justify-center rounded-xl border text-xs font-bold ${accent.chip}`}
+                            >
+                              {String(index + 1).padStart(2, "0")}
+                            </span>
+
+                            <ChevronRight
+                              className={`h-5 w-5 transition-transform duration-300 group-hover:translate-x-1 ${accent.text}`}
+                            />
+                          </div>
+
+                          <h3 className="text-xl font-bold text-white">
+                            {service.title}
+                          </h3>
+
+                          {service.summary && (
+                            <p className="mt-3 text-sm leading-6 text-white">
+                              {service.summary}
+                            </p>
+                          )}
+
+                          <Link
+                            to={`/services/${service.slug}`}
+                            className={`mt-6 inline-flex items-center text-sm font-bold hover:text-white ${accent.text}`}
+                          >
+                            View Details
+                            <ChevronRight className="ml-1 h-4 w-4" />
+                          </Link>
+                        </div>
+                      </div>
+                    </Reveal>
+                  );
+                })
+              ) : (
+                <Reveal>
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <Link
+                      to="/services"
+                      className="btn-ghost"
+                    >
+                      Browse Services
+                    </Link>
+                  </div>
+                </Reveal>
+              )}
+            </div>
+
+            <div className="mt-10">
+              <Link
+                to="/services"
+                className="inline-flex items-center text-sm font-bold text-brand-300 hover:text-white"
+              >
+                View all services
+
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            PROBLEM / RESULTS
+        ===================================================== */}
+
+        <section className="px-5 py-24 sm:px-8 md:px-12">
+          <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2">
+            <Reveal>
+              <div>
+                <p className="eyebrow text-brand-300">
                   The problem
                 </p>
 
-                <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                  You’ve been sold reach before.
+                <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                  Marketing should be accountable to revenue.
                 </h2>
 
-                <p className="mt-5 text-sm leading-7 text-white/55">
-                  Impressions, reach and engagement aren’t P&L numbers. We
-                  report spend and return, and we won’t run or bill a channel if
-                  it isn’t tied to booked revenue.
+                <p className="mt-5 max-w-xl text-base leading-7 text-white">
+                  Too many businesses are left with dashboards full of
+                  impressions, clicks and vanity metrics without knowing what
+                  actually turned into revenue.
                 </p>
               </div>
-            </GlassCard>
+            </Reveal>
+
+            <Reveal>
+              <div
+                className={`${darkCard} relative overflow-hidden rounded-3xl border-brand/30 p-7 sm:p-9`}
+              >
+                <div className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-coral/20 blur-3xl" />
+
+                <p className="eyebrow text-brand-300">
+                  The result
+                </p>
+
+                <h3 className="relative mt-3 text-2xl font-extrabold text-white">
+                  Clearer decisions. Better acquisition.
+                </h3>
+
+                <p className="mt-4 text-sm leading-7 text-white">
+                  We connect campaigns, websites and lead generation into one
+                  measurable growth system.
+                </p>
+              </div>
+            </Reveal>
           </div>
         </section>
 
-        {/* Results */}
-        <section className="border-t border-white/10 px-5 py-20 sm:px-8 md:px-12">
-          <div className="mx-auto max-w-6xl">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-              Results
-            </p>
+        {/* =====================================================
+            HOW WE WORK
+        ===================================================== */}
 
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-              Numbers that belong on the P&L.
-            </h2>
-
-            <div className="mt-10 grid gap-5 sm:grid-cols-3">
-              <GlassCard className={`p-6 ${cardClass}`}>
-                <p className="text-3xl font-black text-brand">AED 35M</p>
-
-                <p className="mt-3 text-sm font-medium leading-6 text-white/55">
-                  Booked revenue attributed to ad spend
-                </p>
-              </GlassCard>
-
-              <GlassCard className={`p-6 ${cardClass}`}>
-                <p className="text-3xl font-black text-brand">AED 50–200</p>
-
-                <p className="mt-3 text-sm font-medium leading-6 text-white/55">
-                  CPC on real estate campaigns
-                </p>
-              </GlassCard>
-
-              <GlassCard className={`p-6 ${cardClass}`}>
-                <p className="text-3xl font-black text-brand">5</p>
-
-                <p className="mt-3 text-sm font-medium leading-6 text-white/55">
-                  Client accounts currently under management
-                </p>
-              </GlassCard>
-            </div>
-          </div>
-        </section>
-
-        {/* How we work */}
-        <section className="border-t border-white/10 px-5 py-20 sm:px-8 md:px-12">
-          <div className="mx-auto max-w-6xl">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-              How we work
-            </p>
-
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-              Simple by design.
-            </h2>
-
-            <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ["01", "Audit before pitch"],
-                ["02", "Tracking first"],
-                ["03", "Launch small and scale"],
-                ["04", "One readable report"],
-              ].map(([number, title]) => (
-                <GlassCard
-                  key={number}
-                  className={`group relative overflow-hidden p-6 ${cardClass}`}
-                >
-                  <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-brand/10 blur-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                  <div className="relative">
-                    <p className="font-mono text-xs font-bold text-brand">
-                      {number}
-                    </p>
-
-                    <h3 className="mt-4 text-lg font-black text-white">
-                      {title}
-                    </h3>
-                  </div>
-                </GlassCard>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Testimonials */}
-        {testimonials.length > 0 && (
-          <section className="border-t border-white/10 px-5 py-20 sm:px-8 md:px-12">
-            <div className="mx-auto max-w-6xl">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-                Testimonials
+        <section className="band px-5 py-24 text-white sm:px-8 md:px-12">
+          <div className="mx-auto max-w-7xl">
+            <Reveal>
+              <p className="eyebrow text-brand-300">
+                How we work
               </p>
 
-              <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                What clients say
+              <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                Simple process. Serious execution.
               </h2>
+            </Reveal>
 
-              <div className="mt-10 grid gap-5 sm:grid-cols-3">
-                {testimonials.map((testimonial) => (
-                  <GlassCard
-                    key={testimonial.id ?? testimonial.name}
-                    className={`relative overflow-hidden p-6 ${cardClass}`}
-                  >
-                    <div className="absolute right-0 top-0 h-24 w-24 rounded-full bg-brand/10 blur-2xl" />
+            <div className="mt-12 grid gap-5 md:grid-cols-3">
+              {[
+                {
+                  number: "01",
+                  title: "Understand",
+                  text: "We identify the commercial goals, current performance and gaps.",
+                },
+                {
+                  number: "02",
+                  title: "Build",
+                  text: "We create the campaigns, pages and systems required to move forward.",
+                },
+                {
+                  number: "03",
+                  title: "Optimise",
+                  text: "We measure what matters and continuously improve the system.",
+                },
+              ].map((item, index) => {
+                const accent = accentAt(index);
 
-                    <p className="relative text-sm leading-7 text-white/65">
-                      “{testimonial.quote}”
-                    </p>
+                return (
+                  <Reveal key={item.number}>
+                    <div
+                      className={`${darkCard} surface-card-hover relative h-full overflow-hidden rounded-2xl p-7 ${accent.hoverBorder}`}
+                    >
+                      <div
+                        className={`absolute -right-12 -top-12 h-36 w-36 rounded-full blur-3xl ${accent.glow}`}
+                      />
 
-                    <div className="relative mt-6 border-t border-white/10 pt-4">
-                      <p className="text-sm font-black text-white">
-                        {testimonial.name}
+                      <span
+                        className={`relative flex h-11 w-11 items-center justify-center rounded-xl border text-sm font-bold ${accent.chip}`}
+                      >
+                        {item.number}
+                      </span>
+
+                      <h3 className="relative mt-5 text-xl font-bold text-white">
+                        {item.title}
+                      </h3>
+
+                      <p className="relative mt-3 text-sm leading-6 text-white">
+                        {item.text}
                       </p>
-
-                      {(testimonial.role || testimonial.company) && (
-                        <p className="mt-1 text-xs font-bold text-brand">
-                          {testimonial.role}
-
-                          {testimonial.role && testimonial.company ? ", " : ""}
-
-                          {testimonial.company}
-                        </p>
-                      )}
                     </div>
-                  </GlassCard>
-                ))}
+                  </Reveal>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* =====================================================
+            TESTIMONIALS
+        ===================================================== */}
+
+        {testimonials.length > 0 && (
+          <section className="band-alt px-5 py-24 sm:px-8 md:px-12">
+            <div className="mx-auto max-w-7xl">
+              <Reveal>
+                <p className="eyebrow text-brand-300">
+                  Client perspective
+                </p>
+
+                <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                  What our clients say.
+                </h2>
+              </Reveal>
+
+              <div className="mt-12 grid gap-5 md:grid-cols-2">
+                {testimonials.map((testimonial, index) => {
+                  const accent = accentAt(index + 1);
+
+                  return (
+                    <Reveal key={testimonial.id ?? testimonial.name}>
+                      <div
+                        className={`${darkCard} relative h-full overflow-hidden rounded-2xl p-7`}
+                      >
+                        <div
+                          className={`absolute inset-y-0 left-0 w-1 ${accent.solid}`}
+                        />
+
+                        <p className="text-lg leading-8 text-white">
+                          “{testimonial.quote}”
+                        </p>
+
+                        <div className="mt-7 border-t border-brand/15 pt-5">
+                          <p className="font-bold text-white">
+                            {testimonial.name}
+                          </p>
+
+                          {(testimonial.role ||
+                            testimonial.company) && (
+                            <p className="mt-1 text-sm text-white">
+                              {[
+                                testimonial.role,
+                                testimonial.company,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </Reveal>
+                  );
+                })}
               </div>
             </div>
           </section>
         )}
 
-        {/* FAQs */}
-        <section className="border-t border-white/10 px-5 py-20 sm:px-8 md:px-12">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-                  FAQs
-                </p>
+        {/* =====================================================
+            FAQ
+        ===================================================== */}
 
-                <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
-                  Common questions
-                </h2>
-              </div>
+        <section className="px-5 py-24 sm:px-8 md:px-12">
+          <div className="mx-auto max-w-4xl">
+            <Reveal>
+              <p className="eyebrow text-brand-300">
+                FAQ
+              </p>
 
-              <Link
-                to="/faqs"
-                className="text-sm font-bold text-brand transition-colors hover:text-white"
-              >
-                View all FAQs →
-              </Link>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+                Questions, answered.
+              </h2>
+            </Reveal>
+
+            <div className="mt-10 space-y-3">
+              {faqs.slice(0, 5).map((faq, index) => (
+                <Reveal key={index}>
+                  <details className="faq surface-card px-5 py-4 open:!border-brand/40 open:!bg-brand/[0.07]">
+                    <summary className="cursor-pointer list-none pr-8 text-sm font-semibold text-white sm:text-base">
+                      {faq.question}
+                    </summary>
+
+                    <p className="mt-3 pr-6 text-sm leading-6 text-white">
+                      {faq.answer}
+                    </p>
+                  </details>
+                </Reveal>
+              ))}
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              {faqs.slice(0, 4).map((faq) => (
-                <GlassCard
-                  key={faq.question}
-                  className={`group p-6 ${cardClass}`}
-                >
-                  <h3 className="text-sm font-black text-white">
-                    {faq.question}
-                  </h3>
+            <div className="mt-8">
+              <Link
+                to="/faqs"
+                className="inline-flex items-center text-sm font-bold text-brand-300 hover:text-white"
+              >
+                View all FAQs
 
-                  <p className="mt-3 text-sm leading-6 text-white/55">
-                    {faq.answer}
-                  </p>
-                </GlassCard>
-              ))}
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="relative border-t border-white/10 px-5 py-24 text-center sm:px-8 md:px-12">
-          <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand/10 blur-[130px]" />
+        {/* =====================================================
+            FINAL CTA
+        ===================================================== */}
 
-          <div className="relative mx-auto max-w-3xl">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-              Let&apos;s talk
-            </p>
+        <section className="relative overflow-hidden px-5 py-24 sm:px-8 md:px-12">
+          <div className="surface-card relative mx-auto max-w-4xl overflow-hidden rounded-3xl border-brand/30 bg-gradient-to-br from-brand/[0.16] to-ink-900/85 px-6 py-14 text-center sm:px-12">
+            <Reveal>
+              <p className="eyebrow text-brand-300">
+                Ready to talk?
+              </p>
 
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">
-              {cta.title}
-            </h2>
+              <h2 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
+                {cta.title}
+              </h2>
 
-            <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-white/55">
-              {cta.description}
-            </p>
+              <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-white">
+                {cta.description}
+              </p>
 
-            <Link
-              to="/book-consultation"
-              className="mt-8 inline-flex items-center gap-1 rounded-full bg-brand px-6 py-3 text-sm font-black text-black shadow-[0_0_35px_rgba(47,188,186,0.2)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/90"
-            >
-              {cta.button}
-              <ChevronRight size={16} />
-            </Link>
+              <Link
+                to="/book-consultation"
+                className="btn-primary mt-8 !px-7 !py-3.5"
+              >
+                {cta.button}
+
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Reveal>
           </div>
         </section>
       </div>
-    </div>
+
+      {loading && (
+        <div className="fixed bottom-5 right-5 z-50 rounded-full border border-brand/25 bg-ink-900/90 px-4 py-2 text-xs text-white shadow-xl backdrop-blur-md">
+          Loading...
+        </div>
+      )}
+    </main>
   );
 }

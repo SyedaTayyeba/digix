@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import PageHero from '../components/ui/PageHero';
 import GlassCard from '../components/ui/GlassCard';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type Step =
   | 'date'
@@ -102,10 +103,10 @@ const MEETING_TYPES = [
 ] as const;
 
 const cardClass =
-  'border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:border-brand/30 hover:bg-black/35';
+  'surface-card surface-card-hover';
 
 const inputClass =
-  'w-full rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 transition-all duration-300 focus:border-brand/50 focus:bg-black/30 focus:ring-1 focus:ring-brand/20 disabled:cursor-not-allowed disabled:opacity-60';
+  'field';
 
 export default function BookConsultation() {
   const [step, setStep] = useState<Step>('date');
@@ -342,6 +343,7 @@ export default function BookConsultation() {
 
   return (
     <div>
+      <PageOverlay />
       <PageHero
         eyebrow="Book a Consultation"
         title="Pick a time that works for you"
@@ -349,7 +351,7 @@ export default function BookConsultation() {
         highlightWords={['time']}
       />
 
-      <section className="border-t border-white/10 px-5 py-16 sm:px-8 md:px-12">
+      <section className="border-t border-brand/15 px-5 py-16 sm:px-8 md:px-12">
         <div className="mx-auto max-w-2xl">
           <GlassCard
             className={`p-5 sm:p-7 md:p-8 ${cardClass}`}
@@ -401,8 +403,8 @@ export default function BookConsultation() {
                             className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all duration-300 ${
                               active ||
                               completed
-                                ? 'border-brand bg-brand/15 text-brand'
-                                : 'border-white/15 bg-white/5 text-white/30'
+                                ? 'border-brand bg-brand/15 text-brand-300'
+                                : 'border-brand/15 bg-white/5 text-white'
                             }`}
                           >
                             {index + 1}
@@ -412,8 +414,8 @@ export default function BookConsultation() {
                             className={`hidden text-[11px] sm:block ${
                               active ||
                               completed
-                                ? 'text-white/80'
-                                : 'text-white/30'
+                                ? 'text-white'
+                                : 'text-white'
                             }`}
                           >
                             {label}
@@ -434,15 +436,15 @@ export default function BookConsultation() {
             {step === 'date' && (
               <div>
                 <div className="mb-6">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
+                  <p className="eyebrow text-brand-300">
                     Step 1
                   </p>
 
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+                  <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">
                     Choose a date
                   </h2>
 
-                  <p className="mt-2 text-sm leading-6 text-white/50">
+                  <p className="mt-2 text-sm leading-6 text-white">
                     Select a date that works for
                     you.
                   </p>
@@ -456,13 +458,13 @@ export default function BookConsultation() {
                       onClick={() =>
                         handleDateSelect(day)
                       }
-                      className="group rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-brand/10"
+                      className="group rounded-xl border border-brand/15 bg-white/5 px-4 py-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-brand/10"
                     >
-                      <span className="block text-sm font-bold text-white transition-colors group-hover:text-brand">
+                      <span className="block text-sm font-bold text-white transition-colors group-hover:text-brand-300">
                         {formatDate(day)}
                       </span>
 
-                      <span className="mt-2 block text-[10px] uppercase tracking-wider text-white/30">
+                      <span className="mt-2 block text-[10px] uppercase tracking-wider text-white">
                         Available
                       </span>
                     </button>
@@ -475,15 +477,15 @@ export default function BookConsultation() {
             {step === 'preference' && (
               <div>
                 <div className="mb-6">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
+                  <p className="eyebrow text-brand-300">
                     Step 2
                   </p>
 
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+                  <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">
                     Choose your preferred time
                   </h2>
 
-                  <p className="mt-2 text-sm text-white/50">
+                  <p className="mt-2 text-sm text-white">
                     {formatDate(date)}
                   </p>
                 </div>
@@ -500,14 +502,14 @@ export default function BookConsultation() {
                           )
                         }
                         disabled={loadingSlots}
-                        className="group flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-brand/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="group flex w-full items-center justify-between rounded-xl border border-brand/15 bg-white/5 px-5 py-4 text-left transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-brand/10 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         <span>
-                          <span className="block text-sm font-bold text-white group-hover:text-brand">
+                          <span className="block text-sm font-bold text-white group-hover:text-brand-300">
                             {option.label}
                           </span>
 
-                          <span className="mt-1 block text-xs text-white/40">
+                          <span className="mt-1 block text-xs text-white">
                             {
                               option.description
                             }
@@ -516,7 +518,7 @@ export default function BookConsultation() {
 
                         <ChevronRight
                           size={18}
-                          className="text-white/20 transition-all duration-300 group-hover:translate-x-1 group-hover:text-brand"
+                          className="text-white transition-all duration-300 group-hover:translate-x-1 group-hover:text-brand-300"
                         />
                       </button>
                     )
@@ -528,7 +530,7 @@ export default function BookConsultation() {
                   onClick={() =>
                     setStep('date')
                   }
-                  className="mt-5 text-xs font-medium text-white/40 transition-colors hover:text-brand"
+                  className="mt-5 text-xs font-medium text-white transition-colors hover:text-brand-300"
                 >
                   ← Change date
                 </button>
@@ -539,15 +541,15 @@ export default function BookConsultation() {
             {step === 'time' && (
               <div>
                 <div className="mb-6">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
+                  <p className="eyebrow text-brand-300">
                     Step 3
                   </p>
 
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+                  <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">
                     Choose an available time
                   </h2>
 
-                  <p className="mt-2 text-sm text-white/50">
+                  <p className="mt-2 text-sm text-white">
                     {formatDate(date)} ·{' '}
                     {timePreference
                       ? `${timePreference.charAt(0).toUpperCase()}${timePreference.slice(1)}`
@@ -556,10 +558,10 @@ export default function BookConsultation() {
                 </div>
 
                 {loadingSlots ? (
-                  <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-8 text-center">
-                    <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-white/10 border-t-brand" />
+                  <div className="rounded-xl border border-brand/15 bg-white/5 px-4 py-8 text-center">
+                    <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-brand/15 border-t-brand" />
 
-                    <p className="mt-3 text-sm text-white/50">
+                    <p className="mt-3 text-sm text-white">
                       Loading available times...
                     </p>
                   </div>
@@ -576,7 +578,7 @@ export default function BookConsultation() {
                               slot.time
                             )
                           }
-                          className="rounded-xl border border-white/10 bg-white/5 px-4 py-4 text-sm font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-brand/10 hover:text-brand"
+                          className="rounded-xl border border-brand/15 bg-white/5 px-4 py-4 text-sm font-bold text-white transition-all duration-300 hover:-translate-y-0.5 hover:border-brand/40 hover:bg-brand/10 hover:text-brand-300"
                         >
                           {slot.display_time}
                         </button>
@@ -584,13 +586,13 @@ export default function BookConsultation() {
                     )}
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-white/10 bg-white/5 px-5 py-8 text-center">
-                    <p className="text-sm text-white/55">
+                  <div className="rounded-xl border border-brand/15 bg-white/5 px-5 py-8 text-center">
+                    <p className="text-sm text-white">
                       No available times for
                       this preference.
                     </p>
 
-                    <p className="mt-1 text-xs text-white/35">
+                    <p className="mt-1 text-xs text-white">
                       Please choose another
                       preference or date.
                     </p>
@@ -602,7 +604,7 @@ export default function BookConsultation() {
                   onClick={() =>
                     setStep('preference')
                   }
-                  className="mt-5 text-xs font-medium text-white/40 transition-colors hover:text-brand"
+                  className="mt-5 text-xs font-medium text-white transition-colors hover:text-brand-300"
                 >
                   ← Change preference
                 </button>
@@ -615,16 +617,16 @@ export default function BookConsultation() {
                 onSubmit={handleDetailsSubmit}
               >
                 <div className="mb-6">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
+                  <p className="eyebrow text-brand-300">
                     Step 4
                   </p>
 
-                  <h2 className="mt-2 text-2xl font-black tracking-tight text-white">
+                  <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-white">
                     Your details
                   </h2>
 
                   <div className="mt-3 rounded-xl border border-brand/15 bg-brand/5 px-4 py-3">
-                    <p className="text-xs text-white/40">
+                    <p className="text-xs text-white">
                       Your consultation
                     </p>
 
@@ -693,7 +695,7 @@ export default function BookConsultation() {
                   />
 
                   <div className="pt-2">
-                    <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
+                    <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white">
                       Meeting type
                     </p>
 
@@ -721,13 +723,13 @@ export default function BookConsultation() {
                               className={`rounded-xl border px-4 py-4 text-left transition-all duration-300 disabled:opacity-60 ${
                                 selected
                                   ? 'border-brand/50 bg-brand/10 shadow-[0_0_25px_rgba(47,188,186,0.08)]'
-                                  : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                                  : 'border-brand/15 bg-white/5 hover:border-brand/25 hover:bg-white/10'
                               }`}
                             >
                               <span
                                 className={`block text-sm font-bold ${
                                   selected
-                                    ? 'text-brand'
+                                    ? 'text-brand-300'
                                     : 'text-white'
                                 }`}
                               >
@@ -736,7 +738,7 @@ export default function BookConsultation() {
                                 }
                               </span>
 
-                              <span className="mt-1 block text-xs text-white/40">
+                              <span className="mt-1 block text-xs text-white">
                                 {
                                   option.description
                                 }
@@ -769,7 +771,7 @@ export default function BookConsultation() {
                       setStep('time')
                     }
                     disabled={submitting}
-                    className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-white/60 transition-all duration-300 hover:border-brand/30 hover:bg-brand/10 hover:text-brand disabled:opacity-50"
+                    className="rounded-full border border-brand/15 bg-white/5 px-5 py-2.5 text-sm font-medium text-white transition-all duration-300 hover:border-brand/30 hover:bg-brand/10 hover:text-brand-300 disabled:opacity-50"
                   >
                     ← Change time
                   </button>
@@ -777,7 +779,7 @@ export default function BookConsultation() {
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="inline-flex items-center justify-center rounded-full bg-brand px-6 py-2.5 text-sm font-black text-black shadow-[0_0_30px_rgba(47,188,186,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="btn-primary inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {submitting
                       ? 'Confirming...'
@@ -790,32 +792,32 @@ export default function BookConsultation() {
             {/* Confirmation */}
             {step === 'confirmed' && (
               <div className="py-8 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-brand/20 bg-brand/10 text-2xl font-bold text-brand shadow-[0_0_35px_rgba(47,188,186,0.12)]">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-brand/20 bg-brand/10 text-2xl font-bold text-brand-300 shadow-[0_0_35px_rgba(47,188,186,0.12)]">
                   ✓
                 </div>
 
-                <p className="mt-6 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-brand">
+                <p className="mt-6 eyebrow text-brand-300">
                   Booking received
                 </p>
 
-                <h2 className="mt-3 text-2xl font-black tracking-tight text-white sm:text-3xl">
+                <h2 className="mt-3 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
                   Your consultation is requested
                 </h2>
 
-                <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-white/55">
+                <p className="mx-auto mt-4 max-w-md text-sm leading-7 text-white">
                   We&apos;ve received your request
                   for{' '}
-                  <strong className="text-white/80">
+                  <strong className="text-white">
                     {formatDate(date)}
                   </strong>{' '}
                   at{' '}
-                  <strong className="text-white/80">
+                  <strong className="text-white">
                     {selectedDisplayTime}
                   </strong>
                   .
                 </p>
 
-                <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-white/40">
+                <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-white">
                   We&apos;ll confirm the appointment
                   and contact you using the details
                   you provided.

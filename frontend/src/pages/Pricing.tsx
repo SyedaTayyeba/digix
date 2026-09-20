@@ -3,7 +3,9 @@ import { ArrowUpRight, Check, ChevronRight } from 'lucide-react';
 
 import PageHero from '../components/ui/PageHero';
 import GlassCard from '../components/ui/GlassCard';
+import { accentAt } from '../lib/accents';
 import { api } from '../lib/api';
+import PageOverlay from '../components/ui/PageOverlay';
 
 type PricingPackage = {
   id?: number;
@@ -21,7 +23,7 @@ type PricingPackage = {
 const WHATSAPP_NUMBER = '971521045088';
 
 const cardClass =
-  'border-white/10 bg-black/25 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-brand/30 hover:bg-black/35';
+  'surface-card surface-card-hover';
 
 export default function Pricing() {
   const [packages, setPackages] = useState<PricingPackage[]>([]);
@@ -75,6 +77,7 @@ export default function Pricing() {
 
   return (
     <div className="overflow-hidden bg-transparent text-white">
+      <PageOverlay />
       <PageHero
         eyebrow="Pricing"
         title="Packages that scale with you"
@@ -83,19 +86,18 @@ export default function Pricing() {
       />
 
       <section className="relative px-5 py-20 sm:px-6 md:px-4 lg:py-2">
-        <div className="absolute left-1/2 top-20 h-72 w-72 -translate-x-1/2 rounded-full bg-brand/10 blur-[120px]" />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="mb-10">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
+            <p className="eyebrow text-brand-300">
               Investment
             </p>
 
-            <h2 className="mt-3 text-3xl font-black tracking-tight text-white sm:text-4xl">
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
               Choose your starting point.
             </h2>
 
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/55">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-white">
               Transparent starting points, with room to shape the engagement
               around your actual goals.
             </p>
@@ -128,6 +130,7 @@ export default function Pricing() {
             <div className="grid gap-5 md:grid-cols-3">
               {packages.map((pkg, index) => {
                 const isHighlighted = Boolean(pkg.highlighted);
+                const accent = accentAt(index);
 
                 const price =
                   pkg.price !== null &&
@@ -143,15 +146,15 @@ export default function Pricing() {
                     key={pkg.id ?? pkg.name}
                     className={`group relative flex flex-col overflow-hidden p-7 ${
                       isHighlighted
-                        ? 'border-brand/50 bg-brand/[0.08] shadow-[0_0_45px_rgba(47,188,186,0.08)]'
+                        ? 'border-brand/60 bg-gradient-to-b from-brand/[0.2] to-ink-900/85 shadow-[0_0_60px_-12px_rgba(47,188,186,0.5)] md:-translate-y-2'
                         : cardClass
                     }`}
                   >
                     <div
                       className={`absolute -right-12 -top-12 h-32 w-32 rounded-full blur-3xl transition-opacity duration-300 ${
                         isHighlighted
-                          ? 'bg-brand/20 opacity-100'
-                          : 'bg-brand/10 opacity-0 group-hover:opacity-100'
+                          ? 'bg-brand/30 opacity-100'
+                          : `${accent.glow} opacity-0 group-hover:opacity-100`
                       }`}
                     />
 
@@ -159,15 +162,15 @@ export default function Pricing() {
                       <div
                         className={`flex h-11 w-11 items-center justify-center rounded-xl border font-mono text-xs font-bold ${
                           isHighlighted
-                            ? 'border-brand/40 bg-brand/15 text-brand'
-                            : 'border-white/10 bg-white/5 text-brand'
+                            ? 'border-brand/50 bg-brand/25 text-white'
+                            : accent.chip
                         }`}
                       >
                         {String(index + 1).padStart(2, '0')}
                       </div>
 
                       {isHighlighted && (
-                        <span className="rounded-full border border-brand/30 bg-brand/10 px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-brand">
+                        <span className="rounded-full border border-coral/60 bg-coral/30 px-3 py-1 text-[11px] font-bold tracking-wide text-white">
                           Popular
                         </span>
                       )}
@@ -175,27 +178,27 @@ export default function Pricing() {
                       {!isHighlighted && (
                         <ArrowUpRight
                           size={18}
-                          className="text-white/20 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand"
+                          className="text-white transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-brand-300"
                         />
                       )}
                     </div>
 
                     <div className="relative mt-7">
-                      <h2 className="text-xl font-black tracking-tight text-white">
+                      <h2 className="text-xl font-extrabold tracking-tight text-white">
                         {pkg.name}
                       </h2>
 
                       {pkg.description && (
-                        <p className="mt-2 min-h-[48px] text-sm leading-6 text-white/50">
+                        <p className="mt-2 min-h-[48px] text-sm leading-6 text-white">
                           {pkg.description}
                         </p>
                       )}
                     </div>
 
-                    <div className="relative mt-7 border-y border-white/10 py-5">
+                    <div className="relative mt-7 border-y border-brand/15 py-5">
                       <p
-                        className={`text-3xl font-black tracking-tight ${
-                          isHighlighted ? 'text-brand' : 'text-white'
+                        className={`text-3xl font-extrabold tracking-tight ${
+                          isHighlighted ? 'text-gradient-brand' : 'text-white'
                         }`}
                       >
                         {pkg.currency && price !== 'Custom Quote'
@@ -204,13 +207,13 @@ export default function Pricing() {
                         {price}
 
                         {period === 'month' && (
-                          <span className="ml-1 text-sm font-medium text-white/40">
+                          <span className="ml-1 text-sm font-medium text-white">
                             /mo
                           </span>
                         )}
 
                         {period === 'year' && (
-                          <span className="ml-1 text-sm font-medium text-white/40">
+                          <span className="ml-1 text-sm font-medium text-white">
                             /yr
                           </span>
                         )}
@@ -222,10 +225,10 @@ export default function Pricing() {
                         {pkg.features.map((feature, featureIndex) => (
                           <li
                             key={`${feature}-${featureIndex}`}
-                            className="flex items-start gap-3 text-sm leading-5 text-white/60"
+                            className="flex items-start gap-3 text-sm leading-5 text-white"
                           >
-                            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-brand/20 bg-brand/10">
-                              <Check size={11} className="text-brand" />
+                            <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${accent.chip}`}>
+                              <Check size={11} />
                             </span>
 
                             <span>{feature}</span>
@@ -237,11 +240,7 @@ export default function Pricing() {
                     <button
                       type="button"
                       onClick={() => openWhatsApp(pkg.name)}
-                      className={`relative mt-8 inline-flex w-full items-center justify-center gap-1 rounded-full px-5 py-3 text-sm font-bold transition-all duration-300 ${
-                        isHighlighted
-                          ? 'bg-brand text-black shadow-[0_0_25px_rgba(47,188,186,0.18)] hover:-translate-y-0.5 hover:bg-brand/90'
-                          : 'border border-brand/30 bg-brand/10 text-white hover:border-brand/50 hover:bg-brand/15'
-                      }`}
+                      className={`relative mt-8 inline-flex w-full items-center justify-center gap-1 rounded-full px-5 py-3 text-sm ${isHighlighted ? 'btn-primary' : 'btn-ghost'}`}
                     >
                       WhatsApp Us
                       <ChevronRight size={14} />
@@ -251,8 +250,8 @@ export default function Pricing() {
               })}
             </div>
           ) : (
-            <div className="rounded-2xl border border-white/10 bg-black/20 p-10 text-center backdrop-blur-xl">
-              <p className="text-sm text-white/45">
+            <div className="rounded-2xl border border-brand/15 bg-ink-900/60 p-10 text-center backdrop-blur-xl">
+              <p className="text-sm text-white">
                 Pricing packages will be available soon.
               </p>
             </div>

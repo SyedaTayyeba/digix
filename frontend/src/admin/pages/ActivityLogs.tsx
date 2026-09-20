@@ -9,6 +9,7 @@ import LoadingState from '../components/LoadingState';
 import ErrorState from '../components/ErrorState';
 import { useCrudList } from '../hooks/useCrudList';
 import type { ActivityLogResource } from '../types';
+import PageOverlay from '../../components/ui/PageOverlay';
 
 const ENDPOINT = '/admin/activity-logs';
 
@@ -71,6 +72,7 @@ export default function ActivityLogs() {
 
   return (
     <div className="space-y-4">
+  
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <SearchInput

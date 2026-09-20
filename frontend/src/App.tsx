@@ -40,6 +40,7 @@ import AdminSeo from "./admin/pages/Seo";
 import AdminNotifications from "./admin/pages/Notifications";
 import AdminAnalytics from "./admin/pages/Analytics";
 import AdminActivityLogs from "./admin/pages/ActivityLogs";
+
 export default function App() {
   return (
     <>
@@ -74,8 +75,13 @@ export default function App() {
               <Route path="services" element={<AdminServices />} />
               <Route path="testimonials" element={<AdminTestimonials />} />
               <Route path="pricing" element={<AdminPricing />} />
+
               <Route path="faqs" element={<AdminFaqs />} />
-              <Route path="faqs/categories" element={<AdminFaqCategories />} />
+              <Route
+                path="faqs/categories"
+                element={<AdminFaqCategories />}
+              />
+
               <Route path="team" element={<AdminTeam />} />
               <Route path="leads" element={<AdminLeads />} />
               <Route path="appointments" element={<AdminAppointments />} />
@@ -83,10 +89,15 @@ export default function App() {
               <Route path="newsletter" element={<AdminNewsletter />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="seo" element={<AdminSeo />} />
-              <Route path="notifications" element={<AdminNotifications />} />
+              <Route
+                path="notifications"
+                element={<AdminNotifications />}
+              />
               <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="activity-logs" element={<AdminActivityLogs />} />
-              
+              <Route
+                path="activity-logs"
+                element={<AdminActivityLogs />}
+              />
             </Route>
           </Route>
         </Route>

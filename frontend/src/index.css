@@ -2,14 +2,242 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body {
-  background-color: #0a0a0a;
-  font-family: 'Inter', system-ui, sans-serif;
+/* ==========================================================================
+   DESIGN TOKENS
+   Brand #2fbcba on deep teal-ink, with iris / coral / sun / azure as
+   supporting accents. Colours live in tailwind.config.js; the values below
+   are only the ones raw CSS needs.
+   ========================================================================== */
+:root {
+  --ink-950: #04141a;
+  --ink-900: #071e26;
+  --ink-800: #0b2a33;
+  --line: rgba(117, 224, 221, 0.14);
+  --line-strong: rgba(117, 224, 221, 0.38);
+  --text: #f1fafa;
+  --text-soft: #ffffff;
+  --text-muted: #ffffff;
 }
 
-::selection {
-  background-color: rgba(47, 188, 186, 0.35);
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--ink-950);
+  }
+
+  body {
+    background-color: var(--ink-950);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: rgba(47, 188, 186, 0.4);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid #75e0dd;
+    outline-offset: 3px;
+  }
+
+  /* Native form controls should match the dark UI */
+  select option {
+    background-color: #0b2a33;
+    color: #f1fafa;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--ink-950);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1b4a52;
+    border-radius: 999px;
+    border: 2px solid var(--ink-950);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2fbcba;
+  }
+}
+
+/* ==========================================================================
+   COMPONENT CLASSES
+   ========================================================================== */
+@layer components {
+  /* --- Cards --------------------------------------------------------- */
+  .surface-card {
+    position: relative;
+    border-radius: 1rem;
+    border: 1px solid var(--line);
+    background: linear-gradient(160deg, rgba(22, 68, 77, 0.66) 0%, rgba(9, 34, 42, 0.82) 100%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 22px 44px -26px rgba(0, 0, 0, 0.7);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  .surface-card-hover {
+    transition:
+      transform 300ms ease,
+      border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+  .surface-card-hover:hover {
+    transform: translateY(-4px);
+    border-color: var(--line-strong);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 28px 50px -24px rgba(47, 188, 186, 0.4);
+  }
+
+  /* flat tinted band used to separate long page sections */
+  .band {
+    background: linear-gradient(180deg, rgba(7, 30, 38, 0.62), rgba(7, 30, 38, 0.42));
+    border-top: 1px solid rgba(117, 224, 221, 0.08);
+    border-bottom: 1px solid rgba(117, 224, 221, 0.08);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .band-alt {
+    background: linear-gradient(180deg, rgba(12, 44, 54, 0.6), rgba(9, 34, 42, 0.45));
+    border-top: 1px solid rgba(117, 224, 221, 0.08);
+    border-bottom: 1px solid rgba(117, 224, 221, 0.08);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  /* --- Buttons ------------------------------------------------------- */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 0.875rem;
+    padding: 0.8rem 1.4rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #04141a;
+    background-image: linear-gradient(120deg, #2fbcba 0%, #45d3c8 50%, #4cc3ff 100%);
+    background-size: 160% 100%;
+    background-position: 0% 0%;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.35) inset,
+      0 12px 28px -10px rgba(47, 188, 186, 0.65);
+    transition:
+      transform 220ms ease,
+      box-shadow 220ms ease,
+      background-position 400ms ease;
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    background-position: 100% 0%;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.4) inset,
+      0 18px 34px -10px rgba(47, 188, 186, 0.75);
+  }
+  .btn-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-radius: 0.875rem;
+    padding: 0.8rem 1.4rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #f1fafa;
+    border: 1px solid rgba(117, 224, 221, 0.35);
+    background: rgba(47, 188, 186, 0.1);
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      transform 220ms ease;
+  }
+  .btn-ghost:hover {
+    transform: translateY(-2px);
+    background: rgba(47, 188, 186, 0.2);
+    border-color: rgba(117, 224, 221, 0.6);
+  }
+
+  /* --- Forms --------------------------------------------------------- */
+  .field {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(117, 224, 221, 0.2);
+    background-color: rgba(4, 20, 26, 0.55);
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #f1fafa;
+    outline: none;
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      background-color 200ms ease;
+  }
+  .field::placeholder {
+    color: #b5d0d3;
+  }
+  .field:hover {
+    border-color: rgba(117, 224, 221, 0.36);
+  }
+  .field:focus {
+    border-color: #2fbcba;
+    background-color: rgba(4, 20, 26, 0.8);
+    box-shadow: 0 0 0 4px rgba(47, 188, 186, 0.2);
+  }
+
+  /* --- Small label above a heading ---------------------------------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .eyebrow::before {
+    content: '';
+    width: 1.25rem;
+    height: 3px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #2fbcba, #4cc3ff);
+  }
+}
+
+/* gradient text for headline emphasis */
+.text-gradient {
+  background-image: linear-gradient(95deg, #ffffff 0%, #b8f1ee 45%, #6fdcd8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-brand {
+  background-image: linear-gradient(100deg, #47cdcb 0%, #4cc3ff 55%, #9c8cff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* svh-aware full-height section, with min-h-screen as the fallback */
@@ -27,8 +255,10 @@ body {
    `reveal` class and get `reveal-visible` added once they intersect. */
 .reveal {
   opacity: 0;
-  transform: translateY(2rem);
-  transition: opacity 700ms ease-out, transform 700ms ease-out;
+  transform: translateY(1.25rem);
+  transition:
+    opacity 650ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 650ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform, opacity;
 }
 
@@ -38,13 +268,54 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .reveal {
     transition: none;
     transform: none;
     opacity: 1;
   }
+  .surface-card-hover:hover,
+  .btn-primary:hover,
+  .btn-ghost:hover {
+    transform: none;
+  }
 }
+
 .impressions-highlight {
-  color: #2fbcbA !important;
-  font-weight: 900 !important;
+  color: #47cdcb !important;
+  font-weight: 800 !important;
+}
+
+/* Native <details> FAQ rows: custom plus / minus marker */
+details.faq > summary {
+  position: relative;
+}
+details.faq > summary::-webkit-details-marker {
+  display: none;
+}
+details.faq > summary::after {
+  content: '+';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  display: flex;
+  height: 1.5rem;
+  width: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  background: rgba(47, 188, 186, 0.16);
+  color: #75e0dd;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  transition: transform 250ms ease, background-color 250ms ease;
+}
+details.faq[open] > summary::after {
+  content: '\2212';
+  transform: translateY(-50%) rotate(180deg);
+  background: rgba(47, 188, 186, 0.3);
 }

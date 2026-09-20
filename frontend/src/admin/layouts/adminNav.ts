@@ -7,6 +7,7 @@ import {
   Quote,
   Tag,
   HelpCircle,
+  FolderTree,
   Users,
   UserSquare2,
   CalendarClock,
@@ -53,30 +54,44 @@ export const ADMIN_NAV: AdminNavSection[] = [
         icon: Home,
         permission: 'homepage.manage',
       },
+
       {
         label: 'Services',
         path: '/admin/services',
         icon: Briefcase,
         permission: 'services.manage',
       },
+
       {
         label: 'Testimonials',
         path: '/admin/testimonials',
         icon: Quote,
         permission: 'testimonials.manage',
       },
+
       {
         label: 'Pricing',
         path: '/admin/pricing',
         icon: Tag,
         permission: 'pricing.manage',
       },
+
+      // FAQ management
       {
         label: 'FAQs',
         path: '/admin/faqs',
         icon: HelpCircle,
         permission: 'faqs.manage',
       },
+
+      // FAQ category management
+      {
+        label: 'FAQ Categories',
+        path: '/admin/faqs/categories',
+        icon: FolderTree,
+        permission: 'faqs.manage',
+      },
+
       {
         label: 'Team',
         path: '/admin/team',
@@ -95,18 +110,21 @@ export const ADMIN_NAV: AdminNavSection[] = [
         icon: Users,
         permission: 'leads.manage',
       },
+
       {
         label: 'Appointments',
         path: '/admin/appointments',
         icon: CalendarCheck,
         permission: 'appointments.manage',
       },
+
       {
         label: 'Availability',
         path: '/admin/availability',
         icon: CalendarClock,
         permission: 'appointments.manage',
       },
+
       {
         label: 'Newsletter',
         path: '/admin/newsletter',
@@ -125,24 +143,28 @@ export const ADMIN_NAV: AdminNavSection[] = [
         icon: Settings,
         permission: 'settings.manage',
       },
+
       {
         label: 'SEO',
         path: '/admin/seo',
         icon: Search,
         permission: 'seo.manage',
       },
+
       {
         label: 'Notifications',
         path: '/admin/notifications',
         icon: Bell,
         permission: 'notifications.view',
       },
+
       {
         label: 'Analytics',
         path: '/admin/analytics',
         icon: BarChart3,
         permission: 'analytics.view',
       },
+
       {
         label: 'Activity Logs',
         path: '/admin/activity-logs',

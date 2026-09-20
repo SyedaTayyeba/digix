@@ -19,6 +19,7 @@ function StatCard({
 }) {
   return (
     <div className="rounded-xl border border-white/10 p-4">
+
       <p className="text-2xl font-medium text-white">
         {value}
       </p>

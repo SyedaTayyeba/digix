@@ -34,7 +34,7 @@ export default function PageHero({
       );
 
       return isHighlighted ? (
-        <span key={index} className="text-brand">
+        <span key={index} className="text-gradient-brand">
           {part}
         </span>
       ) : (
@@ -44,22 +44,24 @@ export default function PageHero({
   };
 
   return (
-    <div className="px-5 py-4 sm:px-8 sm:py-4 md:px-12 md:py-14">
-      {eyebrow && (
-        <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-brand">
-          {eyebrow}
-        </p>
-      )}
+    <div className="relative px-5 pb-6 pt-12 sm:px-8 md:px-12 md:pb-10 md:pt-20">
+      <div className="mx-auto max-w-6xl">
+        {eyebrow && (
+          <p className="eyebrow mb-4 text-brand-300">
+            {eyebrow}
+          </p>
+        )}
 
-      <h1 className="max-w-4xl text-3xl font-black leading-[1.05] tracking-tight text-white drop-shadow-md sm:text-4xl md:text-5xl">
-        {renderTitle()}
-      </h1>
+        <h1 className="max-w-4xl text-4xl font-extrabold leading-[1.06] tracking-tight text-white sm:text-5xl md:text-6xl">
+          {renderTitle()}
+        </h1>
 
-      {description && (
-  <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55 drop-shadow-sm sm:text-base">
-    {description}
-  </p>
-)}
+        {description && (
+          <p className="mt-5 max-w-2xl text-base leading-7 text-white sm:text-lg sm:leading-8">
+            {description}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

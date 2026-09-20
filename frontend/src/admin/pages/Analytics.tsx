@@ -7,6 +7,7 @@ import ErrorState from '../components/ErrorState';
 import { useCrudList } from '../hooks/useCrudList';
 import { apiGet, type ApiError } from '../../lib/api';
 import type { AnalyticsSummary } from '../types';
+import PageOverlay from '../../components/ui/PageOverlay';
 
 interface AnalyticsEventRow {
   id: number;
@@ -39,6 +40,7 @@ function BreakdownList({
 }) {
   return (
     <div className="rounded-xl border border-white/10 p-4">
+
       <h3 className="mb-3 text-xs font-medium uppercase tracking-wide text-white/50">
         {title}
       </h3>

@@ -40,7 +40,10 @@ export default function Navbar() {
   }
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-white/15 bg-[#0a0a0a]/70 backdrop-blur-md">
+    <header className="fixed top-0 z-50 w-full border-b border-brand/15 bg-ink-950/75 backdrop-blur-xl">
+      {/* thin brand line along the very top edge */}
+      <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-brand via-azure to-iris" />
+
       <div className="flex items-center justify-between gap-4 px-5 py-1 sm:px-8 md:px-12">
 
         {/* Logo */}
@@ -54,22 +57,22 @@ export default function Navbar() {
             alt="DigixDubai Logo"
             className="h-14 w-14 object-contain sm:h-16 sm:w-16"
           />
-          <span>
-            digixdubai
+          <span className="text-lg font-extrabold tracking-tight text-white">
+            digix<span className="text-brand-300">dubai</span>
           </span>
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-6 md:flex lg:gap-8">
+        <nav className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               className={({ isActive }) =>
-                `text-sm transition-colors duration-300 hover:text-brand ${
+                `rounded-full px-3.5 py-2 text-sm font-medium transition-colors duration-300 ${
                   isActive
-                    ? 'text-brand'
-                    : 'text-white/75'
+                    ? 'bg-brand/15 text-brand-200'
+                    : 'text-white hover:bg-white/5 hover:text-white'
                 }`
               }
             >
@@ -79,35 +82,35 @@ export default function Navbar() {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-3 md:flex">
           <button
             type="button"
             aria-label="Search"
             onClick={() =>
               setSearchOpen((value) => !value)
             }
-            className="text-white/80 transition-colors duration-300 hover:text-brand"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors duration-300 hover:bg-white/10 hover:text-brand-200"
           >
             <Search size={18} />
           </button>
 
           <Link
             to="/book-consultation"
-            className="rounded-md border border-brand/40 bg-brand/15 px-4 py-2 text-xs backdrop-blur-md transition-colors duration-300 hover:bg-brand/25 sm:px-5 sm:text-sm"
+            className="btn-primary !rounded-full !px-5 !py-2.5 !text-sm"
           >
             Book a Strategy Call
           </Link>
         </div>
 
         {/* Mobile Actions */}
-        <div className="flex items-center gap-3 md:hidden">
+        <div className="flex items-center gap-2 md:hidden">
           <button
             type="button"
             aria-label="Search"
             onClick={() =>
               setSearchOpen((value) => !value)
             }
-            className="text-white/80"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white"
           >
             <Search size={18} />
           </button>
@@ -122,7 +125,7 @@ export default function Navbar() {
             onClick={() =>
               setMenuOpen((value) => !value)
             }
-            className="text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white"
           >
             {menuOpen ? (
               <X size={22} />
@@ -137,7 +140,7 @@ export default function Navbar() {
       {searchOpen && (
         <form
           onSubmit={submitSearch}
-          className="border-t border-white/15 px-5 py-3 sm:px-8 md:px-12"
+          className="border-t border-brand/15 px-5 py-3 sm:px-8 md:px-12"
         >
           <input
             autoFocus
@@ -147,14 +150,14 @@ export default function Navbar() {
               setQuery(e.target.value)
             }
             placeholder="Search services, FAQs…"
-            className="w-full rounded-md border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-1 focus:ring-brand/50"
+            className="field"
           />
         </form>
       )}
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <nav className="flex flex-col gap-1 border-t border-white/15 px-5 py-4 sm:px-8 md:hidden">
+        <nav className="flex flex-col gap-1 border-t border-brand/15 bg-ink-950/95 px-5 py-4 sm:px-8 md:hidden">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
@@ -163,10 +166,10 @@ export default function Navbar() {
                 setMenuOpen(false)
               }
               className={({ isActive }) =>
-                `rounded-md px-2 py-2.5 text-sm ${
+                `rounded-xl px-3 py-3 text-sm font-medium ${
                   isActive
-                    ? 'bg-brand/10 text-brand'
-                    : 'text-white/80'
+                    ? 'bg-brand/15 text-brand-200'
+                    : 'text-white'
                 }`
               }
             >
@@ -179,7 +182,7 @@ export default function Navbar() {
             onClick={() =>
               setMenuOpen(false)
             }
-            className="mt-2 rounded-md bg-brand px-4 py-2.5 text-center text-sm font-medium text-black"
+            className="btn-primary mt-2 !rounded-xl"
           >
             Book a Strategy Call
           </Link>

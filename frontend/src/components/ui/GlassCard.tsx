@@ -6,10 +6,12 @@ interface GlassCardProps {
 }
 
 export default function GlassCard({ children, className = '' }: GlassCardProps) {
+  // Default padding only when the caller hasn't chosen one, so p-5 / p-7 /
+  // p-9 on the call site always win regardless of stylesheet order.
+  const hasPadding = /(^|\s)p-\d/.test(className);
+
   return (
-    <div
-      className={`rounded-2xl border border-white/15 bg-white/[0.06] p-6 backdrop-blur-md ${className}`}
-    >
+    <div className={`surface-card ${hasPadding ? '' : 'p-6'} ${className}`}>
       {children}
     </div>
   );
